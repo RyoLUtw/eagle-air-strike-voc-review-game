@@ -280,11 +280,17 @@
       background: rgba(255,255,255,0.18);
     }
 
+    .view.active {
+      min-height: 0;
+    }
+
     .command-layout {
       display: flex;
       flex-direction: column;
       flex: 1;
       gap: 1.25rem;
+      min-height: 0;
+      overflow: hidden;
     }
 
     .weapon-bar {
@@ -308,6 +314,7 @@
       cursor: pointer;
       transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
       min-height: 130px;
+      color: #fff;
     }
 
     .weapon-card.active {
@@ -340,6 +347,8 @@
       flex-direction: column;
       gap: 1rem;
       padding-bottom: 4rem;
+      overflow-y: auto;
+      min-height: 0;
     }
 
     .vocab-card {
@@ -360,8 +369,29 @@
     }
 
     .vocab-card.completed {
-      border-color: rgba(76, 209, 149, 0.6);
-      background: rgba(76, 209, 149, 0.08);
+      background: rgba(120, 126, 138, 0.18);
+      border-color: rgba(255,255,255,0.08);
+      color: rgba(230, 233, 240, 0.65);
+    }
+
+    .vocab-card.locked {
+      position: relative;
+    }
+
+    .vocab-card.locked::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: rgba(8, 12, 20, 0.45);
+      pointer-events: none;
+    }
+
+    .vocab-status {
+      font-size: 0.8rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      opacity: 0.65;
     }
 
     .practice-toggle {
@@ -432,6 +462,38 @@
       background: var(--accent);
       color: #06101b;
       border-color: rgba(70,192,255,0.45);
+    }
+
+    .attack-summary {
+      display: grid;
+      gap: 0.6rem;
+    }
+
+    .attack-summary-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.6rem 0.8rem;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .attack-summary-row span {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .attack-summary-row span.label {
+      opacity: 0.7;
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .attack-summary-row span.value {
+      font-weight: 600;
+      font-size: 0.95rem;
     }
 
     .vocab-preview {
@@ -560,6 +622,11 @@
 
     polygon.hex[data-selected="true"] {
       stroke: #4cd0ab;
+      stroke-width: 3px;
+    }
+
+    polygon.hex[data-strike="true"] {
+      stroke: #b87333;
       stroke-width: 3px;
     }
 
@@ -826,6 +893,7 @@
 
     const LOCAL_STORAGE_KEY = 'eagleAirStrikeProgress';
     const DEFAULT_VOCAB_REQUIRED = 10;
+    const INCORRECT_LOCKOUT_ROUNDS = 2;
 
     const BACKUP_VOCAB = [
       { word: 'arrive', definition: 'to come to a place', examples: [
@@ -1269,6 +1337,7 @@
     };
 
     let activeModal = null;
+    let lastStrikeCells = [];
 
     function axialKey(q, r) {
       return `${q},${r}`;
@@ -1417,6 +1486,7 @@
       state.nextSpawnId = 1;
       state.nextEnemyId = 1;
       state.nextFacilityId = 1;
+      clearStrikeArea();
       clearOccupants();
     }
 
@@ -1809,6 +1879,26 @@
       targetingState.selectionCells = [];
     }
 
+    function clearStrikeArea() {
+      if (!lastStrikeCells.length) return;
+      lastStrikeCells.forEach((cell) => {
+        if (cell && cell.polygon) {
+          cell.polygon.removeAttribute('data-strike');
+        }
+      });
+      lastStrikeCells = [];
+    }
+
+    function markStrikeArea(cells) {
+      clearStrikeArea();
+      lastStrikeCells = cells.filter(Boolean);
+      lastStrikeCells.forEach((cell) => {
+        if (cell && cell.polygon) {
+          cell.polygon.dataset.strike = 'true';
+        }
+      });
+    }
+
     function setPreviewCells(cells) {
       clearPreviewCells();
       targetingState.previewCells = cells;
@@ -1963,6 +2053,83 @@
       });
     }
 
+    function openAttackSummaryModal({ entry, weapon, baseDamage, totalDamage, penalty, originalStart, actualStart, wasCorrect, roundsRemaining = 0 }) {
+      const formatCell = (cell) => {
+        if (!cell) return 'N/A';
+        return `(${cell.q}, ${cell.r})`;
+      };
+      const drifted = Boolean(originalStart && actualStart && (originalStart.q !== actualStart.q || originalStart.r !== actualStart.r));
+
+      openModal((container, close) => {
+        const heading = document.createElement('h2');
+        heading.textContent = 'Attack Report';
+
+        const description = document.createElement('p');
+        if (wasCorrect) {
+          description.textContent = 'Direct strike confirmed. Vocabulary cleared from the roster.';
+        } else {
+          description.textContent = 'Strike deviated due to inaccuracies. Vocabulary will rearm after lockout expires.';
+        }
+
+        const summary = document.createElement('div');
+        summary.className = 'attack-summary';
+
+        const addRow = (label, value) => {
+          const row = document.createElement('div');
+          row.className = 'attack-summary-row';
+          const labelSpan = document.createElement('span');
+          labelSpan.className = 'label';
+          labelSpan.textContent = label;
+          const valueSpan = document.createElement('span');
+          valueSpan.className = 'value';
+          valueSpan.textContent = value;
+          row.appendChild(labelSpan);
+          row.appendChild(valueSpan);
+          summary.appendChild(row);
+        };
+
+        addRow('Vocabulary', entry.word);
+        addRow('Word Length', `${baseDamage}`);
+        addRow('Weapon', weapon.name);
+        addRow('Damage', `${totalDamage}`);
+        addRow('Inaccuracy', penalty === 0 ? '0 letters wrong' : `${penalty} letter${penalty === 1 ? '' : 's'} wrong`);
+        addRow('Start Cell', drifted ? `${formatCell(originalStart)} → ${formatCell(actualStart)}` : formatCell(originalStart));
+        const resultText = wasCorrect
+          ? 'Target neutralized'
+          : (roundsRemaining > 0
+              ? `Reattempt available in ${roundsRemaining} round${roundsRemaining === 1 ? '' : 's'}`
+              : 'Reattempt now available');
+        addRow('Result', resultText);
+
+        const actions = document.createElement('div');
+        actions.className = 'modal-actions';
+
+        const stayBtn = document.createElement('button');
+        stayBtn.type = 'button';
+        stayBtn.textContent = 'Stay on Map';
+        stayBtn.addEventListener('click', () => {
+          close();
+        });
+
+        const commandBtn = document.createElement('button');
+        commandBtn.type = 'button';
+        commandBtn.textContent = 'Return to Command Mode';
+        commandBtn.classList.add('primary');
+        commandBtn.addEventListener('click', () => {
+          close();
+          switchToCommandMode();
+        });
+
+        actions.appendChild(stayBtn);
+        actions.appendChild(commandBtn);
+
+        container.appendChild(heading);
+        container.appendChild(description);
+        container.appendChild(summary);
+        container.appendChild(actions);
+      });
+    }
+
     function sanitizeVocabularyEntry(entry) {
       if (!entry) return null;
       const word = (entry.word || '').toString().trim();
@@ -2080,28 +2247,52 @@
 
     function renderVocabularyList() {
       if (!vocabColumn) return;
+      const previousScroll = vocabColumn.scrollTop;
       vocabColumn.innerHTML = '';
       if (!commandState.vocabulary.length) {
         if (commandPlaceholder) {
           commandPlaceholder.style.display = '';
           vocabColumn.appendChild(commandPlaceholder);
         }
+        vocabColumn.scrollTop = 0;
         return;
       }
       if (commandPlaceholder) {
         commandPlaceholder.style.display = 'none';
       }
 
-      commandState.vocabulary.forEach((entry) => {
+      const sortedEntries = [...commandState.vocabulary].sort((a, b) => {
+        const aProgress = getProgressForVocab(a.id);
+        const bProgress = getProgressForVocab(b.id);
+        const aCompleted = Boolean(aProgress && aProgress.completed);
+        const bCompleted = Boolean(bProgress && bProgress.completed);
+        if (aCompleted !== bCompleted) {
+          return aCompleted ? 1 : -1;
+        }
+        return a.id - b.id;
+      });
+
+      sortedEntries.forEach((entry) => {
         const card = document.createElement('div');
         card.className = 'vocab-card';
         card.dataset.vocabId = String(entry.id);
         const progress = getProgressForVocab(entry.id);
-        if (!commandState.selectedWeapon || (progress && progress.completed)) {
+        const isCompleted = Boolean(progress && progress.completed);
+        const roundsRemaining = progress
+          ? (typeof progress.lockedUntilTurn === 'number'
+              ? Math.max(0, progress.lockedUntilTurn - state.turn)
+              : Math.max(0, progress.lockoutRemaining || 0))
+          : 0;
+        const isLocked = roundsRemaining > 0;
+        const clickable = Boolean(commandState.selectedWeapon && !isCompleted && !isLocked);
+        if (!clickable) {
           card.classList.add('disabled');
         }
-        if (progress && progress.completed) {
+        if (isCompleted) {
           card.classList.add('completed');
+        }
+        if (isLocked) {
+          card.classList.add('locked');
         }
 
         const title = document.createElement('h3');
@@ -2122,13 +2313,28 @@
         card.appendChild(title);
         card.appendChild(meta);
 
+        if (isCompleted || isLocked) {
+          const status = document.createElement('div');
+          status.className = 'vocab-status';
+          if (isCompleted) {
+            status.textContent = 'Completed';
+          } else if (isLocked) {
+            status.textContent = `Locked ${roundsRemaining} turn${roundsRemaining === 1 ? '' : 's'} remaining`;
+          }
+          card.appendChild(status);
+        }
+
         card.addEventListener('click', () => {
-          if (card.classList.contains('disabled')) return;
+          if (!clickable) return;
           handleVocabSelection(entry);
         });
 
         vocabColumn.appendChild(card);
       });
+
+      if (previousScroll > 0) {
+        vocabColumn.scrollTop = Math.min(previousScroll, vocabColumn.scrollHeight);
+      }
     }
 
     function setPracticeMode(mode) {
@@ -2189,6 +2395,7 @@
       commandView.classList.add('active');
       modeToggle.textContent = 'Switch to Map Mode';
       modeIndicator.textContent = 'Command Mode';
+      clearStrikeArea();
       updatePracticeToggleVisibility();
     }
 
@@ -2587,9 +2794,11 @@
       const entry = commandState.vocabulary.find((v) => v.id === targetingState.vocabId);
       if (!weapon || !entry || !targetingState.startCell) return;
 
-      let actualStart = targetingState.startCell;
-      if (targetingState.incorrectPenalty > 0) {
-        actualStart = displaceCellRandomly(targetingState.startCell, targetingState.incorrectPenalty);
+      const originalStart = targetingState.startCell;
+      const penalty = targetingState.incorrectPenalty || 0;
+      let actualStart = originalStart;
+      if (penalty > 0) {
+        actualStart = displaceCellRandomly(originalStart, penalty);
       }
 
       const strikeCells = getTargetCellsFromSelection(actualStart).filter(Boolean);
@@ -2606,13 +2815,22 @@
       commandState.selectedWeapon = null;
 
       const pending = commandState.pendingSelection || {};
+      const wasCorrect = Boolean(pending.correct);
+      const previous = getProgressForVocab(entry.id) || {};
+      const lockedUntilTurn = wasCorrect ? null : state.turn + INCORRECT_LOCKOUT_ROUNDS + 1;
       commandState.progress.set(entry.id, {
-        completed: true,
+        ...previous,
+        completed: wasCorrect,
         weaponKey: weapon.key,
-        incorrectPenalty: targetingState.incorrectPenalty,
+        incorrectPenalty: penalty,
         damage: totalDamage,
-        correct: pending.correct,
-        details: pending
+        correct: wasCorrect,
+        details: { ...pending },
+        lockedUntilTurn,
+        lastStrikeTurn: state.turn,
+        lastStrike: strikeCells.map((cell) => ({ q: cell.q, r: cell.r })),
+        originalStart: originalStart ? { q: originalStart.q, r: originalStart.r } : null,
+        actualStart: actualStart ? { q: actualStart.q, r: actualStart.r } : null
       });
 
       renderWeaponBar();
@@ -2620,8 +2838,23 @@
 
       advanceTurn();
       saveProgress();
+      const progressAfterAdvance = commandState.progress.get(entry.id);
+      const roundsRemaining = progressAfterAdvance && typeof progressAfterAdvance.lockedUntilTurn === 'number'
+        ? Math.max(0, progressAfterAdvance.lockedUntilTurn - state.turn)
+        : 0;
       resetTargetingState();
-      switchToCommandMode();
+      markStrikeArea(strikeCells);
+      openAttackSummaryModal({
+        entry,
+        weapon,
+        baseDamage,
+        totalDamage,
+        penalty,
+        originalStart,
+        actualStart,
+        wasCorrect,
+        roundsRemaining
+      });
     }
 
     function reselectTargetArea() {
@@ -2809,6 +3042,7 @@
         }
       });
       renderWeaponBar();
+      renderVocabularyList();
     }
 
     function initialize() {
@@ -2820,6 +3054,7 @@
 
     document.getElementById('nextTurnBtn').addEventListener('click', () => {
       advanceTurn();
+      saveProgress();
     });
 
     document.getElementById('resetBtn').addEventListener('click', () => {
