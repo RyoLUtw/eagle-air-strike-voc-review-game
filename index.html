@@ -1,117 +1,879 @@
-<!-- ...existing code... -->
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Hexagon grid — side 5</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Eagle Air Strike - Map Prototype</title>
   <style>
-    :root{
-      --hex-size: 36; /* adjust for hex size */
-      --stroke: #333;
-      --fill: #7fb3ff;
-      --fill-2: #a8e6a1;
+    :root {
+      --hex-size: 38;
+      --bg-dark: #10151f;
+      --panel-bg: rgba(20, 27, 39, 0.88);
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --text-light: #f5f6fa;
+      --accent: #46c0ff;
+      --neutral-hex: #3a3f4b;
+      --spawn-color: #8844ee;
+      --facility-color: #2e86de;
+      --enemy-light: #f9d65c;
+      --enemy-heavy: #f39c3d;
+      --enemy-tank: #c0392b;
     }
-    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto;}
-    .wrap{height:100%;display:flex;align-items:center;justify-content:center;background:#111;}
-    svg{background:linear-gradient(180deg,#0e1220,#0b0f16);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.6)}
-    polygon.hex{stroke:var(--stroke);stroke-width:1.5px;fill:var(--fill);opacity:0.95}
-    polygon.hex.alt{fill:var(--fill-2)}
-    text.coord{pointer-events:none;fill:#062;fill-opacity:0.95;font-size:11px;font-weight:600;text-anchor:middle;dominant-baseline:central}
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-light);
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      padding: 0.75rem 1.25rem;
+      background: linear-gradient(180deg, rgba(10, 15, 24, 0.95), rgba(10, 15, 24, 0.6));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--panel-border);
+    }
+
+    .app-header h1 {
+      font-size: 1rem;
+      margin: 0;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.75;
+    }
+
+    .app-header .mode-indicator {
+      font-size: 0.9rem;
+      opacity: 0.6;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .view {
+      position: relative;
+      flex: 1;
+      display: none;
+      padding: 1.5rem 1rem 4.5rem;
+    }
+
+    .view.active {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .map-layout {
+      display: flex;
+      flex: 1;
+      gap: 1.5rem;
+      align-items: stretch;
+      justify-content: center;
+      position: relative;
+    }
+
+    .map-panel {
+      min-width: 280px;
+      max-width: 320px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .map-panel h2 {
+      margin: 0;
+      font-size: 1.1rem;
+      letter-spacing: 0.04em;
+    }
+
+    .stat-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.6rem;
+      font-size: 0.9rem;
+    }
+
+    .stat {
+      padding: 0.55rem 0.65rem;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .stat span:first-child {
+      opacity: 0.65;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .stat span:last-child {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .map-canvas {
+      flex: 1;
+      min-height: 460px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(12, 18, 28, 0.6);
+      border-radius: 18px;
+      border: 1px solid var(--panel-border);
+      box-shadow: 0 22px 45px rgba(0, 0, 0, 0.35);
+      padding: 1rem;
+    }
+
+    svg#mapSvg {
+      width: min(90vw, 640px);
+      height: min(90vw, 640px);
+    }
+
+    polygon.hex {
+      stroke: rgba(255, 255, 255, 0.14);
+      stroke-width: 1.4px;
+      fill: var(--neutral-hex);
+      transition: fill 120ms ease, stroke 120ms ease;
+    }
+
+    polygon.hex[data-type="spawn"] {
+      fill: var(--spawn-color);
+    }
+
+    polygon.hex[data-type="facility"] {
+      fill: var(--facility-color);
+    }
+
+    polygon.hex[data-type="enemy-light"] {
+      fill: var(--enemy-light);
+    }
+
+    polygon.hex[data-type="enemy-heavy"] {
+      fill: var(--enemy-heavy);
+    }
+
+    polygon.hex[data-type="enemy-tank"] {
+      fill: var(--enemy-tank);
+    }
+
+    polygon.hex[data-highlight="true"] {
+      stroke: #fff;
+      stroke-width: 2.4px;
+    }
+
+    text.cell-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      fill: rgba(255, 255, 255, 0.78);
+      pointer-events: none;
+    }
+
+    text.cell-label[data-contrast="dark"] {
+      fill: rgba(26, 32, 44, 0.95);
+    }
+
+    .legend {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      margin-top: 0.5rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.85rem;
+      opacity: 0.85;
+    }
+
+    .legend-swatch {
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      border: 1px solid rgba(0,0,0,0.25);
+      flex-shrink: 0;
+    }
+
+    .placeholder {
+      margin: auto;
+      padding: 2rem 2.5rem;
+      border: 1px dashed rgba(255,255,255,0.25);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.02);
+      text-align: center;
+      max-width: 520px;
+      line-height: 1.6;
+      font-size: 1.1rem;
+    }
+
+    .mode-toggle {
+      position: fixed;
+      bottom: 1.25rem;
+      left: 1.25rem;
+      padding: 0.85rem 1.3rem;
+      background: var(--accent);
+      border: none;
+      border-radius: 999px;
+      color: #071019;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+      transition: transform 120ms ease, box-shadow 120ms ease;
+      z-index: 10;
+    }
+
+    .mode-toggle:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.45);
+    }
+
+    .turn-display {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 0.95rem;
+      letter-spacing: 0.05em;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .button-group button {
+      padding: 0.65rem 1.25rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-light);
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: background 120ms ease, transform 120ms ease;
+    }
+
+    .button-group button:hover {
+      background: rgba(255, 255, 255, 0.14);
+      transform: translateY(-1px);
+    }
+
+    @media (max-width: 960px) {
+      .map-layout {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .map-panel {
+        max-width: none;
+        width: 100%;
+        order: 2;
+      }
+
+      .map-canvas {
+        order: 1;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <svg id="grid"></svg>
-  </div>
+  <header class="app-header">
+    <h1>Mission Interface</h1>
+    <div class="mode-indicator" id="modeIndicator">Map Mode</div>
+  </header>
+  <main>
+    <section class="view active" id="mapView" aria-label="Map mode">
+      <div class="map-layout">
+        <aside class="map-panel" aria-live="polite">
+          <div class="turn-display">
+            <span>Turn</span>
+            <strong id="turnCounter">0</strong>
+          </div>
+          <div class="stat-list">
+            <div class="stat">
+              <span>Spawn Points</span>
+              <span id="spawnCount">0</span>
+            </div>
+            <div class="stat">
+              <span>Facilities</span>
+              <span id="facilityCount">0</span>
+            </div>
+            <div class="stat">
+              <span>Light Units</span>
+              <span id="lightCount">0</span>
+            </div>
+            <div class="stat">
+              <span>Heavy Units</span>
+              <span id="heavyCount">0</span>
+            </div>
+            <div class="stat">
+              <span>Tank Units</span>
+              <span id="tankCount">0</span>
+            </div>
+            <div class="stat">
+              <span>Next Spawn</span>
+              <span id="spawnTimer">3</span>
+            </div>
+          </div>
+          <div class="legend" aria-label="Map legend">
+            <div class="legend-item"><span class="legend-swatch" style="background: var(--spawn-color);"></span> Spawn Point</div>
+            <div class="legend-item"><span class="legend-swatch" style="background: var(--facility-color);"></span> Ally Facility</div>
+            <div class="legend-item"><span class="legend-swatch" style="background: var(--enemy-light);"></span> Light Enemy</div>
+            <div class="legend-item"><span class="legend-swatch" style="background: var(--enemy-heavy);"></span> Heavy Enemy</div>
+            <div class="legend-item"><span class="legend-swatch" style="background: var(--enemy-tank);"></span> Tank Enemy</div>
+          </div>
+          <div class="button-group">
+            <!-- testing -->
+            <button type="button" id="nextTurnBtn">Next Round</button>
+            <button type="button" id="resetBtn">Reset Simulation</button>
+          </div>
+        </aside>
+        <div class="map-canvas">
+          <svg id="mapSvg" role="presentation" aria-hidden="true"></svg>
+        </div>
+      </div>
+    </section>
+    <section class="view" id="commandView" aria-label="Command mode placeholder">
+      <div class="placeholder">
+        <strong>Command Mode</strong>
+        <p>This area will host weapon selection, vocabulary exercises, and targeting controls in future updates.</p>
+        <p>For now, switch back to the mission map to observe enemy activity.</p>
+      </div>
+    </section>
+  </main>
+  <button class="mode-toggle" id="modeToggle" type="button">Switch to Command Mode</button>
 
   <script>
-    // create a pointy-top hexagon grid (axial coordinates)
-    // "side length 5" => radius = 4 (distance from center to any side)
-    (function(){
-      const side = 5;
-      const radius = side - 1; // 4
-      const hexSize = Number(getComputedStyle(document.documentElement).getPropertyValue('--hex-size')) || 36;
+    const HEX_SIDE = 5;
+    const HEX_RADIUS = HEX_SIDE - 1;
+
+    const INITIAL_SPAWN_POINTS = 3;
+    const INITIAL_FACILITIES = 4;
+    const INITIAL_ENEMY_CONFIG = { light: 3, heavy: 2, tank: 1 };
+
+    const CAP_SPAWN_POINTS = 5;
+    const CAP_ENEMY = { light: 12, heavy: 8, tank: 4 };
+
+    const HEALTH_VALUES = {
+      spawn: 5,
+      facility: 5,
+      light: 1,
+      heavy: 2,
+      tank: 4
+    };
+
+    const ENEMY_DIRECTION_VECTORS = [
+      { q: 1, r: 0 },
+      { q: 1, r: -1 },
+      { q: 0, r: -1 },
+      { q: -1, r: 0 },
+      { q: -1, r: 1 },
+      { q: 0, r: 1 }
+    ];
+
+    const ENEMY_SPAWN_WEIGHTS = {
+      light: 3,
+      heavy: 2,
+      tank: 1
+    };
+
+    const svg = document.getElementById('mapSvg');
+    const turnCounter = document.getElementById('turnCounter');
+    const spawnCountEl = document.getElementById('spawnCount');
+    const facilityCountEl = document.getElementById('facilityCount');
+    const lightCountEl = document.getElementById('lightCount');
+    const heavyCountEl = document.getElementById('heavyCount');
+    const tankCountEl = document.getElementById('tankCount');
+    const spawnTimerEl = document.getElementById('spawnTimer');
+
+    const modeToggle = document.getElementById('modeToggle');
+    const mapView = document.getElementById('mapView');
+    const commandView = document.getElementById('commandView');
+    const modeIndicator = document.getElementById('modeIndicator');
+
+    const cells = new Map();
+    const state = {
+      turn: 0,
+      spawnPoints: [],
+      enemies: [],
+      facilities: [],
+      enemyCounts: { light: 0, heavy: 0, tank: 0 },
+      spawnCounter: 0,
+      spreadCounter: 0,
+      nextSpawnId: 1,
+      nextEnemyId: 1,
+      nextFacilityId: 1
+    };
+
+    function axialKey(q, r) {
+      return `${q},${r}`;
+    }
+
+    function hexDistance(a, b) {
+      const dq = a.q - b.q;
+      const dr = a.r - b.r;
+      const ds = (-a.q - a.r) - (-b.q - b.r);
+      return Math.max(Math.abs(dq), Math.abs(dr), Math.abs(ds));
+    }
+
+    function getNeighbors(q, r) {
+      return ENEMY_DIRECTION_VECTORS.map(({ q: dq, r: dr }) => ({ q: q + dq, r: r + dr }));
+    }
+
+    function getCell(q, r) {
+      return cells.get(axialKey(q, r));
+    }
+
+    function cellAvailable(q, r) {
+      const cell = getCell(q, r);
+      return cell && !cell.occupant;
+    }
+
+    function randomItem(array) {
+      return array[Math.floor(Math.random() * array.length)];
+    }
+
+    function buildGrid() {
+      const hexSize = Number(getComputedStyle(document.documentElement).getPropertyValue('--hex-size')) || 38;
       const sqrt3 = Math.sqrt(3);
 
-      const hexCorners = (cx, cy, size) => {
-        // pointy-top hex corners (starting at angle 0 = rightmost corner)
-        const pts = [];
-        for(let i=0;i<6;i++){
-          const angle = Math.PI/180 * (60 * i - 30); // -30 for pointy-top
-          pts.push([cx + size * Math.cos(angle), cy + size * Math.sin(angle)]);
+      function axialToPixel(q, r) {
+        return {
+          x: hexSize * sqrt3 * (q + r / 2),
+          y: hexSize * 1.5 * r
+        };
+      }
+
+      function hexCorners(cx, cy) {
+        const corners = [];
+        for (let i = 0; i < 6; i++) {
+          const angle = Math.PI / 180 * (60 * i - 30);
+          corners.push([
+            cx + hexSize * Math.cos(angle),
+            cy + hexSize * Math.sin(angle)
+          ]);
         }
-        return pts;
-      };
+        return corners;
+      }
 
-      const axialToPixel = (q, r, size) => {
-        // pointy-top axial to pixel
-        const x = size * sqrt3 * (q + r/2);
-        const y = size * 3/2 * r;
-        return [x, y];
-      };
-
-      // collect hexes within radius
-      const hexes = [];
-      for(let q = -radius; q <= radius; q++){
-        for(let r = -radius; r <= radius; r++){
+      const positions = [];
+      for (let q = -HEX_RADIUS; q <= HEX_RADIUS; q++) {
+        for (let r = -HEX_RADIUS; r <= HEX_RADIUS; r++) {
           const s = -q - r;
-          if(Math.abs(s) <= radius){
-            hexes.push({q, r});
+          if (Math.abs(s) <= HEX_RADIUS) {
+            positions.push({ q, r });
           }
         }
       }
 
-      // compute pixel positions and extents
-      const positions = hexes.map(h => {
-        const [x,y] = axialToPixel(h.q, h.r, hexSize);
-        return {q:h.q, r:h.r, x, y};
-      });
-
-      // determine bounding box
       let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-      positions.forEach(p => {
-        const corners = hexCorners(p.x, p.y, hexSize);
-        corners.forEach(([cx,cy]) => {
+      const enriched = positions.map(({ q, r }) => {
+        const { x, y } = axialToPixel(q, r);
+        const corners = hexCorners(x, y);
+        corners.forEach(([cx, cy]) => {
           minX = Math.min(minX, cx);
           maxX = Math.max(maxX, cx);
           minY = Math.min(minY, cy);
           maxY = Math.max(maxY, cy);
         });
+        return { q, r, x, y, corners };
       });
 
-      // add padding
-      const pad = 12;
-      minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+      const padding = 16;
+      minX -= padding;
+      minY -= padding;
+      maxX += padding;
+      maxY += padding;
       const width = maxX - minX;
       const height = maxY - minY;
 
-      const svg = document.getElementById('grid');
-      svg.setAttribute('width', Math.min(width, window.innerWidth-40));
-      svg.setAttribute('height', Math.min(height, window.innerHeight-40));
       svg.setAttribute('viewBox', `${minX} ${minY} ${width} ${height}`);
       svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      svg.innerHTML = '';
+      cells.clear();
 
-      // render hexagons
-      positions.forEach((p, i) => {
-        const corners = hexCorners(p.x, p.y, hexSize);
-        const points = corners.map(pt => pt.join(',')).join(' ');
-        const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
-        poly.setAttribute('points', points);
-        poly.setAttribute('class', 'hex' + ((Math.abs(p.q + p.r) % 2 === 0) ? ' alt':'')); // simple alternation
-        poly.setAttribute('data-axial', `${p.q},${p.r}`);
-        svg.appendChild(poly);
+      enriched.forEach((cell) => {
+        const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        const points = cell.corners.map(([cx, cy]) => `${cx},${cy}`).join(' ');
+        polygon.setAttribute('points', points);
+        polygon.setAttribute('class', 'hex');
+        polygon.dataset.axial = axialKey(cell.q, cell.r);
+        polygon.dataset.type = 'none';
 
-        const text = document.createElementNS('http://www.w3.org/2000/svg','text');
-        text.setAttribute('x', p.x);
-        text.setAttribute('y', p.y);
-        text.setAttribute('class','coord');
-        text.textContent = `${p.q},${p.r}`;
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', cell.x);
+        text.setAttribute('y', cell.y + 4);
+        text.setAttribute('class', 'cell-label');
+
+        svg.appendChild(polygon);
         svg.appendChild(text);
+
+        cells.set(axialKey(cell.q, cell.r), {
+          ...cell,
+          polygon,
+          label: text,
+          occupant: null
+        });
+      });
+    }
+
+    function clearOccupants() {
+      cells.forEach((cell) => {
+        cell.occupant = null;
+        cell.polygon.dataset.type = 'none';
+        cell.label.textContent = '';
+        cell.label.removeAttribute('data-contrast');
+      });
+    }
+
+    function resetState() {
+      state.turn = 0;
+      state.spawnPoints = [];
+      state.enemies = [];
+      state.facilities = [];
+      state.enemyCounts = { light: 0, heavy: 0, tank: 0 };
+      state.spawnCounter = 0;
+      state.spreadCounter = 0;
+      state.nextSpawnId = 1;
+      state.nextEnemyId = 1;
+      state.nextFacilityId = 1;
+      clearOccupants();
+    }
+
+    function availableNonEdgeCells() {
+      return Array.from(cells.values()).filter((cell) => {
+        const distance = Math.max(Math.abs(cell.q), Math.abs(cell.r), Math.abs(-cell.q - cell.r));
+        return distance < HEX_RADIUS && !cell.occupant;
+      });
+    }
+
+    function availableAnyCells() {
+      return Array.from(cells.values()).filter((cell) => !cell.occupant);
+    }
+
+    function selectRandomCell(candidates) {
+      if (!candidates.length) return null;
+      const index = Math.floor(Math.random() * candidates.length);
+      return candidates.splice(index, 1)[0];
+    }
+
+    function registerOccupant(cell, occupant) {
+      cell.occupant = occupant;
+      cell.polygon.dataset.type = occupant.renderType;
+      if (occupant.label) {
+        cell.label.textContent = occupant.label;
+        if (occupant.contrast === 'dark') {
+          cell.label.dataset.contrast = 'dark';
+        } else {
+          cell.label.removeAttribute('data-contrast');
+        }
+      } else {
+        cell.label.textContent = '';
+        cell.label.removeAttribute('data-contrast');
+      }
+    }
+
+    function placeSpawn(cell) {
+      const spawn = {
+        id: state.nextSpawnId++,
+        q: cell.q,
+        r: cell.r,
+        health: HEALTH_VALUES.spawn
+      };
+      state.spawnPoints.unshift(spawn);
+      registerOccupant(cell, {
+        renderType: 'spawn',
+        label: `${spawn.health}`,
+        contrast: 'dark',
+        entityType: 'spawn',
+        reference: spawn
+      });
+    }
+
+    function placeFacility(cell) {
+      const facility = {
+        id: state.nextFacilityId++,
+        q: cell.q,
+        r: cell.r,
+        health: HEALTH_VALUES.facility
+      };
+      state.facilities.push(facility);
+      registerOccupant(cell, {
+        renderType: 'facility',
+        label: `${facility.health}`,
+        contrast: 'light',
+        entityType: 'facility',
+        reference: facility
+      });
+    }
+
+    function determineDirection(spawn, target) {
+      const dq = target.q - spawn.q;
+      const dr = target.r - spawn.r;
+      const distance = Math.max(Math.abs(dq), Math.abs(dr), Math.abs(-dq - dr));
+      if (distance === 0) return { q: 0, r: 0 };
+      const stepQ = Math.round(dq / distance);
+      const stepR = Math.round(dr / distance);
+      const candidate = ENEMY_DIRECTION_VECTORS.find((dir) => dir.q === stepQ && dir.r === stepR);
+      return candidate || { q: stepQ, r: stepR };
+    }
+
+    function placeEnemy(spawn, cell, type) {
+      const direction = determineDirection(spawn, cell);
+      const enemy = {
+        id: state.nextEnemyId++,
+        type,
+        q: cell.q,
+        r: cell.r,
+        health: HEALTH_VALUES[type],
+        spawnId: spawn.id,
+        direction
+      };
+      state.enemies.push(enemy);
+      state.enemyCounts[type] += 1;
+      registerOccupant(cell, {
+        renderType: `enemy-${type}`,
+        label: `${enemy.health}`,
+        contrast: type === 'light' ? 'dark' : 'light',
+        entityType: 'enemy',
+        reference: enemy
+      });
+    }
+
+    function spawnEnemiesAround(spawn, config) {
+      const baseCell = getCell(spawn.q, spawn.r);
+      if (!baseCell) return;
+      const neighbors = getNeighbors(spawn.q, spawn.r)
+        .map(({ q, r }) => getCell(q, r))
+        .filter(Boolean);
+      const openNeighbors = neighbors.filter((cell) => !cell.occupant);
+      if (!openNeighbors.length) return;
+
+      const types = Object.keys(config);
+      types.forEach((type) => {
+        const count = config[type];
+        for (let i = 0; i < count; i++) {
+          if (state.enemyCounts[type] >= CAP_ENEMY[type]) continue;
+          const available = neighbors.filter((cell) => cell && !cell.occupant);
+          if (!available.length) return;
+          const selected = available[Math.floor(Math.random() * available.length)];
+          placeEnemy(spawn, selected, type);
+        }
+      });
+    }
+
+    function initializeObjects() {
+      const spawnCandidates = availableNonEdgeCells();
+      const selectedSpawns = [];
+      for (let i = 0; i < INITIAL_SPAWN_POINTS; i++) {
+        if (!spawnCandidates.length || state.spawnPoints.length >= CAP_SPAWN_POINTS) break;
+        const cell = selectRandomCell(spawnCandidates);
+        if (!cell) break;
+        placeSpawn(cell);
+        selectedSpawns.push(cell);
+      }
+
+      state.spawnPoints.forEach((spawn) => {
+        if (state.enemyCounts.light >= CAP_ENEMY.light && state.enemyCounts.heavy >= CAP_ENEMY.heavy && state.enemyCounts.tank >= CAP_ENEMY.tank) {
+          return;
+        }
+        spawnEnemiesAround(spawn, INITIAL_ENEMY_CONFIG);
       });
 
-    })();
+      const facilityCandidates = availableAnyCells();
+      for (let i = 0; i < INITIAL_FACILITIES; i++) {
+        if (!facilityCandidates.length) break;
+        const cell = selectRandomCell(facilityCandidates);
+        if (!cell) break;
+        placeFacility(cell);
+      }
+    }
+
+    function refreshCounts() {
+      turnCounter.textContent = state.turn;
+      spawnCountEl.textContent = state.spawnPoints.length;
+      facilityCountEl.textContent = state.facilities.length;
+      lightCountEl.textContent = state.enemyCounts.light;
+      heavyCountEl.textContent = state.enemyCounts.heavy;
+      tankCountEl.textContent = state.enemyCounts.tank;
+
+      const remainder = state.turn % 3;
+      const turnsUntilSpread = remainder === 0 ? 3 : 3 - remainder;
+      spawnTimerEl.textContent = turnsUntilSpread;
+    }
+
+    function getSpawnById(id) {
+      return state.spawnPoints.find((spawn) => spawn.id === id);
+    }
+
+    function attemptEnemySpread() {
+      const occupiedSnapshot = new Map();
+      cells.forEach((cell, key) => {
+        occupiedSnapshot.set(key, cell.occupant);
+      });
+
+      const updates = [];
+
+      state.enemies.forEach((enemy) => {
+        const spawn = getSpawnById(enemy.spawnId);
+        if (!spawn) return;
+        const direction = enemy.direction;
+        const targetKey = axialKey(enemy.q + direction.q, enemy.r + direction.r);
+        const targetCell = cells.get(targetKey);
+        if (!targetCell) return;
+        if (occupiedSnapshot.get(targetKey)) return;
+
+        const currentCell = cells.get(axialKey(enemy.q, enemy.r));
+        if (!currentCell) return;
+
+        occupiedSnapshot.set(targetKey, { ...currentCell.occupant });
+        occupiedSnapshot.set(axialKey(enemy.q, enemy.r), null);
+        updates.push({ enemy, currentCell, targetCell });
+      });
+
+      updates.forEach(({ enemy, currentCell, targetCell }) => {
+        currentCell.occupant = null;
+        currentCell.polygon.dataset.type = 'none';
+        currentCell.label.textContent = '';
+        currentCell.label.removeAttribute('data-contrast');
+
+        enemy.q = targetCell.q;
+        enemy.r = targetCell.r;
+
+        registerOccupant(targetCell, {
+          renderType: `enemy-${enemy.type}`,
+          label: `${enemy.health}`,
+          contrast: enemy.type === 'light' ? 'dark' : 'light',
+          entityType: 'enemy',
+          reference: enemy
+        });
+      });
+    }
+
+    function buildSpawnWeightPool() {
+      const entries = [];
+      Object.entries(ENEMY_SPAWN_WEIGHTS).forEach(([type, weight]) => {
+        if (state.enemyCounts[type] >= CAP_ENEMY[type]) return;
+        for (let i = 0; i < weight; i++) {
+          entries.push(type);
+        }
+      });
+      return entries;
+    }
+
+    function spawnEnemyWave() {
+      const spawnPointsOrdered = [...state.spawnPoints];
+      spawnPointsOrdered.sort((a, b) => b.id - a.id); // newest first
+
+      spawnPointsOrdered.forEach((spawn) => {
+        const pool = buildSpawnWeightPool();
+        if (!pool.length) return;
+        const type = randomItem(pool);
+        const neighbors = getNeighbors(spawn.q, spawn.r)
+          .map(({ q, r }) => getCell(q, r))
+          .filter((cell) => cell && !cell.occupant);
+        if (!neighbors.length) return;
+        const selected = randomItem(neighbors);
+        placeEnemy(spawn, selected, type);
+      });
+    }
+
+    function createNewSpawnPoint() {
+      if (state.spawnPoints.length >= CAP_SPAWN_POINTS) return;
+      const candidates = availableNonEdgeCells();
+      if (!candidates.length) return;
+      const cell = selectRandomCell(candidates);
+      if (!cell) return;
+      placeSpawn(cell);
+      const spawn = state.spawnPoints[0];
+      spawnEnemiesAround(spawn, INITIAL_ENEMY_CONFIG);
+    }
+
+    function advanceTurn() {
+      state.turn += 1;
+
+      if (state.turn % 3 === 0) {
+        attemptEnemySpread();
+        spawnEnemyWave();
+      }
+
+      if (state.turn % 5 === 0) {
+        const beforeCount = state.spawnPoints.length;
+        createNewSpawnPoint();
+        if (state.spawnPoints.length === beforeCount) {
+          // no placement occurred, nothing else to do
+        }
+      }
+
+      refreshCounts();
+    }
+
+    function initialize() {
+      buildGrid();
+      resetState();
+      initializeObjects();
+      refreshCounts();
+    }
+
+    document.getElementById('nextTurnBtn').addEventListener('click', () => {
+      advanceTurn();
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      resetState();
+      initializeObjects();
+      refreshCounts();
+    });
+
+    modeToggle.addEventListener('click', () => {
+      const mapActive = mapView.classList.contains('active');
+      if (mapActive) {
+        mapView.classList.remove('active');
+        commandView.classList.add('active');
+        modeToggle.textContent = 'Switch to Map Mode';
+        modeIndicator.textContent = 'Command Mode';
+      } else {
+        commandView.classList.remove('active');
+        mapView.classList.add('active');
+        modeToggle.textContent = 'Switch to Command Mode';
+        modeIndicator.textContent = 'Map Mode';
+      }
+    });
+
+    initialize();
   </script>
 </body>
 </html>
-<!-- ...existing code... -->
