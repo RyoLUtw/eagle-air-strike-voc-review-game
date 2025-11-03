@@ -222,6 +222,347 @@
       flex-shrink: 0;
     }
 
+    .command-topbar {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      padding: 1rem 1.25rem;
+      background: rgba(12, 18, 28, 0.92);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      margin-bottom: 1rem;
+      position: relative;
+    }
+
+    .command-topbar.hidden {
+      display: none;
+    }
+
+    .topbar-actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .topbar-toggle {
+      position: absolute;
+      right: 1rem;
+      top: 1rem;
+      padding: 0.4rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+      color: var(--text-light);
+      cursor: pointer;
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .topbar-actions label,
+    .topbar-actions button {
+      padding: 0.7rem 1.2rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.1);
+      color: var(--text-light);
+      cursor: pointer;
+      font-size: 0.9rem;
+      letter-spacing: 0.04em;
+    }
+
+    .topbar-actions label:hover,
+    .topbar-actions button:hover {
+      background: rgba(255,255,255,0.18);
+    }
+
+    .command-layout {
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+      gap: 1.25rem;
+    }
+
+    .weapon-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      padding: 1rem;
+      border-radius: 14px;
+      background: rgba(12, 18, 28, 0.8);
+      border: 1px solid var(--panel-border);
+    }
+
+    .weapon-card {
+      padding: 0.9rem;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+      min-height: 130px;
+    }
+
+    .weapon-card.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(70, 192, 255, 0.35);
+      background: rgba(70, 192, 255, 0.12);
+    }
+
+    .weapon-card.cooldown {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .weapon-card h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .weapon-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      font-size: 0.85rem;
+      opacity: 0.85;
+    }
+
+    .vocab-column {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+      padding-bottom: 4rem;
+    }
+
+    .vocab-card {
+      border-radius: 14px;
+      padding: 1rem 1.25rem;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+      cursor: pointer;
+    }
+
+    .vocab-card.disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .vocab-card.completed {
+      border-color: rgba(76, 209, 149, 0.6);
+      background: rgba(76, 209, 149, 0.08);
+    }
+
+    .practice-toggle {
+      position: fixed;
+      right: 1.5rem;
+      bottom: 1.5rem;
+      padding: 0.85rem 1.4rem;
+      background: rgba(70, 192, 255, 0.9);
+      border: none;
+      border-radius: 999px;
+      color: #071019;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      box-shadow: 0 14px 32px rgba(0,0,0,0.35);
+      display: none;
+      z-index: 11;
+    }
+
+    .practice-toggle.visible {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.72);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      padding: 2rem;
+    }
+
+    .modal-content {
+      background: rgba(10, 15, 24, 0.95);
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.1);
+      width: min(800px, 90vw);
+      max-height: 90vh;
+      overflow: auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .modal-actions button {
+      padding: 0.7rem 1.4rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.1);
+      color: var(--text-light);
+      cursor: pointer;
+      letter-spacing: 0.04em;
+    }
+
+    .modal-actions button.primary {
+      background: var(--accent);
+      color: #06101b;
+      border-color: rgba(70,192,255,0.45);
+    }
+
+    .vocab-preview {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .vocab-preview-item {
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .exercise-content {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .exercise-content input[type="text"] {
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.22);
+      background: rgba(0,0,0,0.2);
+      color: var(--text-light);
+      font-size: 1rem;
+    }
+
+    .answer-feedback {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.2rem;
+      font-size: 1.2rem;
+    }
+
+    .answer-feedback span.correct {
+      color: #4cd0ab;
+    }
+
+    .answer-feedback span.incorrect {
+      color: #e77f67;
+    }
+
+    .options-list {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .options-list button {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.06);
+      color: var(--text-light);
+      cursor: pointer;
+      letter-spacing: 0.03em;
+    }
+
+    .options-list button.selected.correct {
+      border-color: rgba(76, 209, 149, 0.7);
+      background: rgba(76, 209, 149, 0.12);
+    }
+
+    .options-list button.selected.incorrect {
+      border-color: rgba(231, 127, 103, 0.7);
+      background: rgba(231, 127, 103, 0.12);
+    }
+
+    .targeting-overlay {
+      position: absolute;
+      top: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 0.8rem 1.2rem;
+      border-radius: 12px;
+      background: rgba(12, 18, 28, 0.92);
+      border: 1px solid rgba(255,255,255,0.14);
+      display: none;
+      flex-direction: column;
+      gap: 0.6rem;
+      z-index: 6;
+      min-width: 280px;
+      text-align: center;
+    }
+
+    .targeting-overlay.visible {
+      display: flex;
+    }
+
+    .targeting-overlay .actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .targeting-overlay button {
+      padding: 0.5rem 1.1rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.08);
+      color: var(--text-light);
+      cursor: pointer;
+      letter-spacing: 0.04em;
+    }
+
+    .targeting-overlay button.confirm {
+      background: var(--accent);
+      color: #071019;
+      border-color: rgba(70,192,255,0.45);
+    }
+
+    polygon.hex[data-option="true"] {
+      fill: rgba(255, 255, 255, 0.45);
+    }
+
+    polygon.hex[data-preview="true"] {
+      stroke: #46c0ff;
+      stroke-width: 2.6px;
+    }
+
+    polygon.hex[data-selected="true"] {
+      stroke: #4cd0ab;
+      stroke-width: 3px;
+    }
+
     .placeholder {
       margin: auto;
       padding: 2rem 2.5rem;
@@ -307,6 +648,13 @@
         order: 1;
       }
     }
+
+    @media (max-width: 720px) {
+      .practice-toggle {
+        right: 1rem;
+        bottom: 1rem;
+      }
+    }
   </style>
 </head>
 <body>
@@ -364,17 +712,42 @@
         <div class="map-canvas">
           <svg id="mapSvg" role="presentation" aria-hidden="true"></svg>
         </div>
+        <div class="targeting-overlay" id="targetingOverlay" aria-live="polite">
+          <div id="targetingInstruction">Select a target cell.</div>
+          <div class="actions">
+            <button type="button" id="confirmTargetBtn" class="confirm">Confirm</button>
+            <button type="button" id="reselectTargetBtn">Reselect</button>
+            <button type="button" id="cancelTargetBtn">Cancel</button>
+          </div>
+        </div>
       </div>
     </section>
-    <section class="view" id="commandView" aria-label="Command mode placeholder">
-      <div class="placeholder">
-        <strong>Command Mode</strong>
-        <p>This area will host weapon selection, vocabulary exercises, and targeting controls in future updates.</p>
-        <p>For now, switch back to the mission map to observe enemy activity.</p>
+    <section class="view" id="commandView" aria-label="Command mode">
+      <div class="command-layout">
+        <div class="command-topbar" id="commandTopbar">
+          <div>
+            <h2 style="margin: 0 0 0.35rem; font-size: 1.1rem; letter-spacing: 0.05em; text-transform: uppercase;">Command Prep</h2>
+            <p style="margin: 0; opacity: 0.7; font-size: 0.85rem;">Upload custom vocabulary or deploy with backup intel.</p>
+          </div>
+          <div class="topbar-actions">
+            <input id="vocabUpload" class="file-input" type="file" accept="application/json" />
+            <label for="vocabUpload">Upload Vocabulary JSON</label>
+            <button type="button" id="playBackupBtn">Play with Backup Words</button>
+          </div>
+          <button type="button" id="topbarToggle" class="topbar-toggle">Hide</button>
+        </div>
+        <div class="weapon-bar" id="weaponBar" role="list" aria-label="Weapon selection"></div>
+        <div class="vocab-column" id="vocabColumn">
+          <div class="placeholder" id="commandPlaceholder">
+            <strong>Awaiting Orders</strong>
+            <p>Load vocabulary to begin command operations. You can upload a JSON file or deploy with backup words.</p>
+          </div>
+        </div>
       </div>
     </section>
   </main>
   <button class="mode-toggle" id="modeToggle" type="button">Switch to Command Mode</button>
+  <button class="practice-toggle" id="practiceToggle" type="button" aria-live="polite">Switch to Meaning Practice</button>
 
   <script>
     const HEX_SIDE = 5;
@@ -395,6 +768,418 @@
       tank: 4
     };
 
+    const ATTACK_PATTERNS = {
+      single: { cells: 1 },
+      line3: { cells: 3 },
+      line5: { cells: 5 },
+      hex7: { cells: 7 },
+      triangle3: { cells: 3 }
+    };
+
+    const WEAPON_CONFIGS = [
+      {
+        key: 'orbitalLaser',
+        name: 'Orbital Laser Strike',
+        pattern: 'single',
+        damageMultiplier: 1,
+        cooldown: 3,
+        phases: 1,
+        description: 'Precision hit on a single cell.'
+      },
+      {
+        key: 'eagleStrike',
+        name: 'Eagle Air Strike',
+        pattern: 'line3',
+        damageMultiplier: 0.5,
+        cooldown: 1,
+        phases: 2,
+        description: 'Three-cell line strike. Select start and direction.'
+      },
+      {
+        key: 'eagleStraff',
+        name: 'Eagle Straffing Run',
+        pattern: 'line5',
+        damageMultiplier: 0.2,
+        cooldown: 1,
+        phases: 2,
+        description: 'Five-cell line suppression run.'
+      },
+      {
+        key: 'bomb500kg',
+        name: '500 kg Bomb',
+        pattern: 'hex7',
+        damageMultiplier: 1,
+        cooldown: 5,
+        phases: 1,
+        description: 'Area blast covering center cell and neighbors.'
+      },
+      {
+        key: 'precisionStrike',
+        name: 'Orbital Precision Strike',
+        pattern: 'triangle3',
+        damageMultiplier: 0.5,
+        cooldown: 1,
+        phases: 2,
+        description: 'Triangular strike extending in chosen direction.'
+      }
+    ];
+
+    const LOCAL_STORAGE_KEY = 'eagleAirStrikeProgress';
+    const DEFAULT_VOCAB_REQUIRED = 10;
+
+    const BACKUP_VOCAB = [
+      { word: 'arrive', definition: 'to come to a place', examples: [
+        'We waited for the bus to arrive at the station.',
+        'She arrived home late after work.',
+        'Let me know when you arrive safely.',
+        'The guests arrived just in time for dinner.',
+        'We arrived at school before the bell rang.'
+      ]},
+      { word: 'borrow', definition: 'to take something for a short time', examples: [
+        'Can I borrow your pen and give it back later?',
+        'I borrowed a book from the library.',
+        'He borrowed money from his friend.',
+        'Don’t forget to return what you borrow.',
+        'She borrowed my umbrella because it was raining.'
+      ]},
+      { word: 'lend', definition: 'to give something to someone for a short time', examples: [
+        'Can you lend me your ruler?',
+        'I lent my notes to Tom.',
+        'My mom lent me her phone for the trip.',
+        'He refused to lend his car to anyone.',
+        'I’ll lend you some money until payday.'
+      ]},
+      { word: 'choose', definition: 'to pick one thing from several', examples: [
+        'She chose the red shirt instead of the blue one.',
+        'You can choose any seat you like.',
+        'It’s hard to choose between pizza and pasta.',
+        'We chose a movie to watch together.',
+        'He chose to study abroad.'
+      ]},
+      { word: 'prepare', definition: 'to get ready', examples: [
+        'She prepared breakfast before everyone woke up.',
+        'We need to prepare for the exam.',
+        'He prepared his clothes for tomorrow.',
+        'The chef prepared the ingredients carefully.',
+        'They prepared for the storm by closing all windows.'
+      ]},
+      { word: 'decide', definition: 'to make a choice', examples: [
+        'I can’t decide what to eat.',
+        'She decided to go jogging instead of staying home.',
+        'They decided to move to a new city.',
+        'He finally decided to buy the car.',
+        'We decided that today is cleaning day.'
+      ]},
+      { word: 'carry', definition: 'to hold and take something with you', examples: [
+        'She carried a heavy bag up the stairs.',
+        'He carried his lunch box to school.',
+        'The baby was carried by his father.',
+        'Please carry these boxes to the car.',
+        'The waiter carried a tray full of glasses.'
+      ]},
+      { word: 'check', definition: 'to look at something carefully', examples: [
+        'Please check your homework before handing it in.',
+        'I need to check my email.',
+        'She checked if the door was locked.',
+        'We checked the weather before leaving.',
+        'He checked his wallet to see if he had enough money.'
+      ]},
+      { word: 'wash', definition: 'to clean with water', examples: [
+        'I need to wash my hands before dinner.',
+        'She washed her clothes in the machine.',
+        'They washed the car on Sunday.',
+        'He washed the dishes after lunch.',
+        'The rain washed the dust off the street.'
+      ]},
+      { word: 'fix', definition: 'to repair something', examples: [
+        'My dad fixed the broken chair.',
+        'The mechanic fixed the car engine.',
+        'I need to fix my phone screen.',
+        'She fixed her hair in front of the mirror.',
+        'The plumber fixed the leak in the kitchen.'
+      ]},
+      { word: 'fill', definition: 'to make something full', examples: [
+        'Please fill the glass with water.',
+        'He filled the box with toys.',
+        'She filled the form before sending it.',
+        'The room filled with smoke.',
+        'The bus filled with passengers quickly.'
+      ]},
+      { word: 'empty', definition: 'to remove everything from inside', examples: [
+        'Please empty the trash can.',
+        'The bottle is empty—there’s no juice left.',
+        'He emptied his backpack on the table.',
+        'The streets were empty early in the morning.',
+        'The cup was empty after she drank it.'
+      ]},
+      { word: 'bring', definition: 'to take something with you', examples: [
+        'Don’t forget to bring your book to class.',
+        'She brought her dog to the park.',
+        'He brought snacks for everyone.',
+        'Please bring an umbrella in case it rains.',
+        'They brought gifts to the party.'
+      ]},
+      { word: 'hurry', definition: 'to move quickly', examples: [
+        'We have to hurry or we’ll miss the train.',
+        'She hurried to the bus stop.',
+        'Don’t hurry—take your time.',
+        'He hurried home before the rain started.',
+        'They hurried to finish before the deadline.'
+      ]},
+      { word: 'late', definition: 'not on time', examples: [
+        'I was late for class because of traffic.',
+        'Don’t be late again tomorrow.',
+        'The train was late today.',
+        'She stayed up late watching TV.',
+        'He apologized for being late.'
+      ]},
+      { word: 'clean', definition: 'to make something not dirty', examples: [
+        'Please clean your room.',
+        'She cleaned the table after dinner.',
+        'I like to clean on weekends.',
+        'The air feels clean after the rain.',
+        'He cleaned his shoes before going out.'
+      ]},
+      { word: 'dirty', definition: 'not clean', examples: [
+        'His hands are dirty from painting.',
+        'Don’t wear that dirty shirt.',
+        'The floor looks dirty—let’s mop it.',
+        'The river was dirty after the storm.',
+        'She washed the dirty dishes.'
+      ]},
+      { word: 'save', definition: 'to keep something for later', examples: [
+        'She saved some money to buy a bike.',
+        'I saved half of my lunch for later.',
+        'He saved the document before closing it.',
+        'They saved the cat from the tree.',
+        'We need to save water during summer.'
+      ]},
+      { word: 'spend', definition: 'to use money or time', examples: [
+        'She spent $10 on snacks.',
+        'He spent the weekend at home.',
+        'Don’t spend too much on clothes.',
+        'We spent hours playing games.',
+        'They spent the evening watching movies.'
+      ]},
+      { word: 'taste', definition: 'the flavor of something', examples: [
+        'This soup tastes salty.',
+        'Can you taste the lemon in this cake?',
+        'The drink tasted strange.',
+        'He tasted the sauce before serving.',
+        'It tastes better when it’s cold.'
+      ]},
+      { word: 'share', definition: 'to give part of something to others', examples: [
+        'Let’s share the pizza.',
+        'She shared her umbrella with me.',
+        'They shared stories around the fire.',
+        'Please share your notes with your classmate.',
+        'He shared a photo online.'
+      ]},
+      { word: 'wake up', definition: 'to stop sleeping', examples: [
+        'I wake up at 7 every morning.',
+        'She woke up late today.',
+        'The baby woke up crying.',
+        'Please wake up your brother for breakfast.',
+        'I can’t wake up without coffee.'
+      ]},
+      { word: 'sleepy', definition: 'feeling like you want to sleep', examples: [
+        'I feel sleepy after lunch.',
+        'The movie was so slow that I got sleepy.',
+        'He’s sleepy because he stayed up late.',
+        'She rubbed her eyes, looking sleepy.',
+        'The cat looked sleepy on the couch.'
+      ]},
+      { word: 'hungry', definition: 'wanting to eat', examples: [
+        'I’m hungry—let’s get lunch.',
+        'The kids were hungry after school.',
+        'She felt hungry even after dinner.',
+        'He’s always hungry in the morning.',
+        'They gave food to the hungry dog.'
+      ]},
+      { word: 'thirsty', definition: 'wanting to drink', examples: [
+        'I’m thirsty—can I have some water?',
+        'He felt thirsty after running.',
+        'The plants are thirsty; water them!',
+        'She was so thirsty she finished the bottle in one go.',
+        'We were thirsty after hiking.'
+      ]},
+      { word: 'change', definition: 'to make something different', examples: [
+        'I need to change my clothes.',
+        'The weather changed suddenly.',
+        'She changed her hairstyle.',
+        'He wants to change jobs.',
+        'They changed the plan last minute.'
+      ]},
+      { word: 'hold', definition: 'to have something in your hands', examples: [
+        'She held the baby carefully.',
+        'Please hold my bag for a second.',
+        'He held the door open.',
+        'They held hands while walking.',
+        'The box was too heavy to hold long.'
+      ]},
+      { word: 'move', definition: 'to go from one place to another', examples: [
+        'He moved to a new city.',
+        'Please move your chair closer.',
+        'The dog moved quickly.',
+        'They moved the table to the corner.',
+        'Don’t move until I say go.'
+      ]},
+      { word: 'travel', definition: 'to go to another place', examples: [
+        'She loves to travel around the world.',
+        'They traveled by train.',
+        'We traveled to Japan last summer.',
+        'He travels for work often.',
+        'I want to travel to the mountains.'
+      ]},
+      { word: 'plan', definition: 'to decide what to do', examples: [
+        'Let’s plan a trip for next month.',
+        'She planned her day carefully.',
+        'We planned the party together.',
+        'He didn’t plan to be late.',
+        'They planned what to cook for dinner.'
+      ]},
+      { word: 'join', definition: 'to become part of something', examples: [
+        'I want to join the basketball team.',
+        'She joined the meeting online.',
+        'He joined us for lunch.',
+        'They joined the club last week.',
+        'Please join the line.'
+      ]},
+      { word: 'invite', definition: 'to ask someone to come', examples: [
+        'I’ll invite you to my birthday party.',
+        'She invited her friends to dinner.',
+        'They invited us to their wedding.',
+        'He didn’t invite anyone this time.',
+        'We were invited to the event.'
+      ]},
+      { word: 'visit', definition: 'to go somewhere for a short time', examples: [
+        'We visited our grandparents last weekend.',
+        'She loves to visit new places.',
+        'He visited me at the hospital.',
+        'They visited the museum together.',
+        'Please visit us again soon.'
+      ]},
+      { word: 'forget', definition: 'to not remember', examples: [
+        'I forgot my keys at home.',
+        'Don’t forget your homework.',
+        'She forgot his name.',
+        'He forgot to turn off the light.',
+        'They forgot about the meeting.'
+      ]},
+      { word: 'remember', definition: 'to keep something in your mind', examples: [
+        'I remember your birthday.',
+        'She can’t remember where she put her phone.',
+        'Please remember to call me.',
+        'He remembers his first day at school.',
+        'Do you remember that song?'
+      ]},
+      { word: 'listen', definition: 'to pay attention to sound', examples: [
+        'Please listen carefully to the teacher.',
+        'I listened to music while studying.',
+        'She listened to the rain.',
+        'He never listens to advice.',
+        'They listened quietly.'
+      ]},
+      { word: 'sound', definition: 'what you hear', examples: [
+        'The bell sounds loud.',
+        'What’s that sound coming from the kitchen?',
+        'The song sounds beautiful.',
+        'It sounded like thunder.',
+        'That sound scared the cat.'
+      ]},
+      { word: 'wear', definition: 'to have clothes on your body', examples: [
+        'She wore a red dress to the party.',
+        'He always wears a hat.',
+        'Don’t wear shoes inside the house.',
+        'I wore my new jacket today.',
+        'They wear uniforms at school.'
+      ]},
+      { word: 'raise', definition: 'to lift up', examples: [
+        'Please raise your hand if you know the answer.',
+        'He raised his glass for a toast.',
+        'They raised the flag.',
+        'She raised her eyebrows in surprise.',
+        'The child raised his toy sword proudly.'
+      ]},
+      { word: 'push', definition: 'to move something away from you', examples: [
+        'He pushed the door open.',
+        'Don’t push your friend!',
+        'She pushed the cart at the store.',
+        'They pushed the box under the bed.',
+        'I had to push the button twice.'
+      ]},
+      { word: 'pull', definition: 'to move something toward you', examples: [
+        'Please pull the door to open it.',
+        'He pulled the rope hard.',
+        'She pulled the chair closer.',
+        'The dog pulled on the leash.',
+        'I pulled my jacket zipper up.'
+      ]},
+      { word: 'throw', definition: 'to send something through the air', examples: [
+        'He threw the ball to his friend.',
+        'Don’t throw trash on the ground.',
+        'She threw her arms around him in joy.',
+        'They threw water balloons at each other.',
+        'I threw my keys on the table.'
+      ]},
+      { word: 'catch', definition: 'to take hold of something moving', examples: [
+        'She caught the ball easily.',
+        'He caught a cold last week.',
+        'The cat caught a mouse.',
+        'I couldn’t catch what he said.',
+        'They caught the train just in time.'
+      ]},
+      { word: 'build', definition: 'to make something by putting parts together', examples: [
+        'They built a treehouse.',
+        'He built his own computer.',
+        'The workers built a new bridge.',
+        'She built a sandcastle at the beach.',
+        'We built a fire to keep warm.'
+      ]},
+      { word: 'grow', definition: 'to get bigger or older', examples: [
+        'The plant grew quickly.',
+        'Kids grow fast these days.',
+        'His hair grew long over the summer.',
+        'They grew vegetables in the garden.',
+        'She’s growing into a kind person.'
+      ]},
+      { word: 'break', definition: 'to damage or separate into pieces', examples: [
+        'Don’t break the glass!',
+        'He broke his phone screen.',
+        'She broke the toy by accident.',
+        'The vase broke when it fell.',
+        'My heart broke when I heard the news.'
+      ]},
+      { word: 'belong', definition: 'to be owned by someone', examples: [
+        'This pen belongs to me.',
+        'The book belongs on that shelf.',
+        'Who does this bag belong to?',
+        'That cat belongs to our neighbor.',
+        'These shoes belong in the closet.'
+      ]},
+      { word: 'cover', definition: 'to put something over another thing', examples: [
+        'Please cover your mouth when you sneeze.',
+        'She covered the pot with a lid.',
+        'He covered his eyes from the light.',
+        'The blanket covered the baby.',
+        'Snow covered the ground.'
+      ]},
+      { word: 'promise', definition: 'to say you will do something', examples: [
+        'I promise to be careful.',
+        'She promised not to tell anyone.',
+        'He promised to call me.',
+        'They promised to help.',
+        'Don’t make a promise you can’t keep.'
+      ]},
+      { word: 'hope', definition: 'to want something good to happen', examples: [
+        'I hope you feel better soon.',
+        'She hopes to travel next year.',
+        'We hope for good weather.',
+        'He hoped to pass the test.',
+        'They hope everything goes well.'
+      ]}
+    ];
+
     const ENEMY_DIRECTION_VECTORS = [
       { q: 1, r: 0 },
       { q: 1, r: -1 },
@@ -403,6 +1188,15 @@
       { q: -1, r: 1 },
       { q: 0, r: 1 }
     ];
+
+    const TRIANGLE_DIRECTIONS = [
+      { key: 'up', label: 'Up', primary: { q: 0, r: -1 }, wing: { q: 1, r: -1 } },
+      { key: 'down', label: 'Down', primary: { q: 0, r: 1 }, wing: { q: -1, r: 1 } },
+      { key: 'left', label: 'Left', primary: { q: -1, r: 0 }, wing: { q: -1, r: 1 } },
+      { key: 'right', label: 'Right', primary: { q: 1, r: 0 }, wing: { q: 1, r: -1 } }
+    ];
+
+    const LINE_DIRECTION_LABELS = ['E', 'NE', 'NW', 'W', 'SW', 'SE'];
 
     const ENEMY_SPAWN_WEIGHTS = {
       light: 3,
@@ -423,6 +1217,19 @@
     const mapView = document.getElementById('mapView');
     const commandView = document.getElementById('commandView');
     const modeIndicator = document.getElementById('modeIndicator');
+    const commandTopbar = document.getElementById('commandTopbar');
+    const topbarToggle = document.getElementById('topbarToggle');
+    const vocabUpload = document.getElementById('vocabUpload');
+    const playBackupBtn = document.getElementById('playBackupBtn');
+    const weaponBar = document.getElementById('weaponBar');
+    const vocabColumn = document.getElementById('vocabColumn');
+    const commandPlaceholder = document.getElementById('commandPlaceholder');
+    const practiceToggle = document.getElementById('practiceToggle');
+    const targetingOverlay = document.getElementById('targetingOverlay');
+    const targetingInstruction = document.getElementById('targetingInstruction');
+    const confirmTargetBtn = document.getElementById('confirmTargetBtn');
+    const reselectTargetBtn = document.getElementById('reselectTargetBtn');
+    const cancelTargetBtn = document.getElementById('cancelTargetBtn');
 
     const cells = new Map();
     const state = {
@@ -437,6 +1244,31 @@
       nextEnemyId: 1,
       nextFacilityId: 1
     };
+
+    const commandState = {
+      practiceMode: 'spelling',
+      vocabulary: [],
+      progress: new Map(),
+      weaponCooldowns: new Map(),
+      selectedWeapon: null,
+      pendingSelection: null
+    };
+
+    const targetingState = {
+      active: false,
+      weaponKey: null,
+      vocabId: null,
+      phase: 0,
+      startCell: null,
+      selectionCells: [],
+      direction: null,
+      incorrectPenalty: 0,
+      previewCells: [],
+      directionOptions: [],
+      directionCellMap: new Map()
+    };
+
+    let activeModal = null;
 
     function axialKey(q, r) {
       return `${q},${r}`;
@@ -464,6 +1296,15 @@
 
     function randomItem(array) {
       return array[Math.floor(Math.random() * array.length)];
+    }
+
+    function shuffleArray(array) {
+      const copy = [...array];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
     }
 
     function buildGrid() {
@@ -538,15 +1379,21 @@
         text.setAttribute('y', cell.y + 4);
         text.setAttribute('class', 'cell-label');
 
-        svg.appendChild(polygon);
-        svg.appendChild(text);
-
-        cells.set(axialKey(cell.q, cell.r), {
+        const cellData = {
           ...cell,
           polygon,
           label: text,
           occupant: null
-        });
+        };
+
+        polygon.addEventListener('click', (event) => handleHexClick(event, cellData));
+        polygon.addEventListener('mouseenter', () => handleHexHover(cellData));
+        polygon.addEventListener('mouseleave', () => handleHexLeave(cellData));
+
+        svg.appendChild(polygon);
+        svg.appendChild(text);
+
+        cells.set(axialKey(cell.q, cell.r), cellData);
       });
     }
 
@@ -811,6 +1658,1123 @@
       });
     }
 
+    function formatHealth(value) {
+      if (Number.isInteger(value)) return `${value}`;
+      return value.toFixed(1).replace(/\.0$/, '');
+    }
+
+    function clearCell(cell) {
+      if (!cell) return;
+      cell.occupant = null;
+      cell.polygon.dataset.type = 'none';
+      cell.polygon.removeAttribute('data-preview');
+      cell.polygon.removeAttribute('data-selected');
+      cell.polygon.removeAttribute('data-option');
+      cell.label.textContent = '';
+      cell.label.removeAttribute('data-contrast');
+    }
+
+    function removeSpawn(spawn) {
+      const index = state.spawnPoints.findIndex((s) => s.id === spawn.id);
+      if (index !== -1) {
+        state.spawnPoints.splice(index, 1);
+      }
+      const cell = getCell(spawn.q, spawn.r);
+      clearCell(cell);
+    }
+
+    function removeFacility(facility) {
+      const index = state.facilities.findIndex((f) => f.id === facility.id);
+      if (index !== -1) {
+        state.facilities.splice(index, 1);
+      }
+      const cell = getCell(facility.q, facility.r);
+      clearCell(cell);
+    }
+
+    function removeEnemy(enemy) {
+      const index = state.enemies.findIndex((e) => e.id === enemy.id);
+      if (index !== -1) {
+        state.enemies.splice(index, 1);
+      }
+      state.enemyCounts[enemy.type] = Math.max(0, state.enemyCounts[enemy.type] - 1);
+      const cell = getCell(enemy.q, enemy.r);
+      clearCell(cell);
+    }
+
+    function applyDamageToCell(cell, damage) {
+      if (!cell || !cell.occupant || !cell.occupant.reference) return;
+      const occupant = cell.occupant;
+      const entity = occupant.reference;
+      entity.health = Math.max(0, entity.health - damage);
+
+      if (entity.health <= 0) {
+        if (occupant.entityType === 'enemy') {
+          removeEnemy(entity);
+        } else if (occupant.entityType === 'spawn') {
+          removeSpawn(entity);
+        } else if (occupant.entityType === 'facility') {
+          removeFacility(entity);
+        }
+      } else {
+        registerOccupant(cell, {
+          renderType: occupant.renderType,
+          label: formatHealth(entity.health),
+          contrast: occupant.contrast,
+          entityType: occupant.entityType,
+          reference: entity
+        });
+      }
+    }
+
+    function applyDamageToCells(cellList, damage) {
+      cellList.forEach((cell) => applyDamageToCell(cell, damage));
+      refreshCounts();
+    }
+
+    function getLineCells(startCell, direction, length) {
+      const cellsInLine = [startCell];
+      let current = startCell;
+      for (let i = 1; i < length; i++) {
+        const next = getCell(current.q + direction.q, current.r + direction.r);
+        if (!next) {
+          return [];
+        }
+        cellsInLine.push(next);
+        current = next;
+      }
+      return cellsInLine;
+    }
+
+    function getHexAreaCells(centerCell) {
+      const neighbors = getNeighbors(centerCell.q, centerCell.r)
+        .map(({ q, r }) => getCell(q, r))
+        .filter(Boolean);
+      return [centerCell, ...neighbors];
+    }
+
+    function getTriangleCells(startCell, directionOption) {
+      const option = TRIANGLE_DIRECTIONS.find((dir) => dir.key === directionOption);
+      if (!option) return [];
+      const primary = getCell(startCell.q + option.primary.q, startCell.r + option.primary.r);
+      const wing = getCell(startCell.q + option.wing.q, startCell.r + option.wing.r);
+      if (!primary || !wing) return [];
+      return [startCell, primary, wing];
+    }
+
+    function computeWeaponCells(startCell, weaponKey, directionOption) {
+      const weapon = WEAPON_CONFIGS.find((w) => w.key === weaponKey);
+      if (!weapon || !startCell) return [];
+      if (weapon.pattern === 'single') {
+        return [startCell];
+      }
+      if (weapon.pattern === 'hex7') {
+        return getHexAreaCells(startCell);
+      }
+      if (weapon.pattern === 'line3' || weapon.pattern === 'line5') {
+        if (!directionOption) return [];
+        const length = weapon.pattern === 'line3' ? 3 : 5;
+        return getLineCells(startCell, directionOption, length);
+      }
+      if (weapon.pattern === 'triangle3') {
+        if (!directionOption) return [];
+        return getTriangleCells(startCell, directionOption.key || directionOption);
+      }
+      return [];
+    }
+
+    function displaceCellRandomly(cell, steps) {
+      let current = cell;
+      for (let i = 0; i < steps; i++) {
+        const neighbors = getNeighbors(current.q, current.r)
+          .map(({ q, r }) => getCell(q, r))
+          .filter(Boolean);
+        if (!neighbors.length) break;
+        current = randomItem(neighbors);
+      }
+      return current;
+    }
+
+    function clearPreviewCells() {
+      targetingState.previewCells.forEach((cell) => {
+        cell.polygon.removeAttribute('data-preview');
+      });
+      targetingState.previewCells = [];
+    }
+
+    function clearSelectedCells() {
+      targetingState.selectionCells.forEach((cell) => {
+        cell.polygon.removeAttribute('data-selected');
+      });
+      targetingState.selectionCells = [];
+    }
+
+    function setPreviewCells(cells) {
+      clearPreviewCells();
+      targetingState.previewCells = cells;
+      cells.forEach((cell) => {
+        cell.polygon.dataset.preview = 'true';
+      });
+    }
+
+    function setSelectedCells(cells) {
+      clearSelectedCells();
+      targetingState.selectionCells = cells;
+      cells.forEach((cell) => {
+        cell.polygon.dataset.selected = 'true';
+      });
+    }
+
+    function clearDirectionOptions() {
+      targetingState.directionOptions.forEach((option) => {
+        option.cells.forEach((cell) => {
+          cell.polygon.removeAttribute('data-option');
+          cell.polygon.removeAttribute('data-end-option');
+        });
+      });
+      targetingState.directionOptions = [];
+      targetingState.directionCellMap = new Map();
+    }
+
+    function highlightDirectionOptions(options) {
+      clearDirectionOptions();
+      targetingState.directionOptions = options;
+      targetingState.directionCellMap = new Map();
+      options.forEach((option) => {
+        option.cells.forEach((cell) => {
+          cell.polygon.dataset.option = 'true';
+        });
+        if (option.clickCell) {
+          option.clickCell.polygon.dataset.endOption = option.key;
+          targetingState.directionCellMap.set(axialKey(option.clickCell.q, option.clickCell.r), option);
+        }
+      });
+    }
+
+    function buildLineDirectionOptions(startCell, weapon) {
+      const length = weapon.pattern === 'line3' ? 3 : 5;
+      const options = [];
+      ENEMY_DIRECTION_VECTORS.forEach((vector, index) => {
+        const cells = getLineCells(startCell, vector, length);
+        if (cells.length !== length) return;
+        options.push({
+          key: `${weapon.key}-dir-${index}`,
+          label: LINE_DIRECTION_LABELS[index] || `Dir ${index + 1}`,
+          cells,
+          vector,
+          clickCell: cells[cells.length - 1]
+        });
+      });
+      return options;
+    }
+
+    function buildTriangleDirectionOptions(startCell) {
+      const options = [];
+      TRIANGLE_DIRECTIONS.forEach((direction) => {
+        const cells = getTriangleCells(startCell, direction.key);
+        if (cells.length !== 3) return;
+        options.push({
+          key: `triangle-${direction.key}`,
+          label: direction.label,
+          cells,
+          direction,
+          clickCell: cells[1]
+        });
+      });
+      return options;
+    }
+
+    function updateTargetingOverlay(options = {}) {
+      if (!targetingOverlay) return;
+      if (options.visible === false) {
+        targetingOverlay.classList.remove('visible');
+        return;
+      }
+      targetingOverlay.classList.add('visible');
+      if (options.instruction) {
+        targetingInstruction.textContent = options.instruction;
+      }
+      if (options.showConfirm != null) {
+        confirmTargetBtn.style.display = options.showConfirm ? 'inline-flex' : 'none';
+      }
+      if (options.showReselect != null) {
+        reselectTargetBtn.style.display = options.showReselect ? 'inline-flex' : 'none';
+      }
+      if (options.showCancel != null) {
+        cancelTargetBtn.style.display = options.showCancel ? 'inline-flex' : 'none';
+      }
+      if (options.confirmDisabled != null) {
+        confirmTargetBtn.disabled = options.confirmDisabled;
+      }
+    }
+
+    function closeModal() {
+      if (!activeModal) return;
+      document.removeEventListener('keydown', activeModal.keyListener);
+      activeModal.backdrop.remove();
+      activeModal = null;
+    }
+
+    function openModal(buildContent) {
+      closeModal();
+      const backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop';
+      const content = document.createElement('div');
+      content.className = 'modal-content';
+      backdrop.appendChild(content);
+
+      const keyListener = (event) => {
+        if (event.key === 'Escape') {
+          closeModal();
+        }
+      };
+
+      backdrop.addEventListener('click', (event) => {
+        if (event.target === backdrop) {
+          closeModal();
+        }
+      });
+
+      document.body.appendChild(backdrop);
+      document.addEventListener('keydown', keyListener);
+
+      activeModal = { backdrop, content, keyListener };
+
+      buildContent(content, closeModal);
+      return activeModal;
+    }
+
+    function showMessageModal(title, message) {
+      openModal((container, close) => {
+        const heading = document.createElement('h2');
+        heading.textContent = title;
+        const paragraph = document.createElement('p');
+        paragraph.textContent = message;
+        const actions = document.createElement('div');
+        actions.className = 'modal-actions';
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.textContent = 'Close';
+        closeBtn.addEventListener('click', () => close());
+        actions.appendChild(closeBtn);
+        container.appendChild(heading);
+        container.appendChild(paragraph);
+        container.appendChild(actions);
+      });
+    }
+
+    function sanitizeVocabularyEntry(entry) {
+      if (!entry) return null;
+      const word = (entry.word || '').toString().trim();
+      const definition = (entry.definition || entry.meaning || '').toString().trim();
+      let examples = entry.examples;
+      if (typeof examples === 'string') {
+        examples = [examples];
+      }
+      if (!Array.isArray(examples)) {
+        examples = [];
+      }
+      examples = examples.map((example) => example.toString());
+      if (!word || !definition) return null;
+      if (!examples.length) {
+        if (entry.example) {
+          examples = [entry.example.toString()];
+        } else {
+          examples = ['No example provided.'];
+        }
+      }
+      return { word, definition, examples };
+    }
+
+    function sampleBackupWords(count, excludeSet = new Set()) {
+      const pool = BACKUP_VOCAB.filter((item) => !excludeSet.has(item.word.toLowerCase()));
+      const selections = [];
+      const available = [...pool];
+      while (selections.length < count && available.length) {
+        const index = Math.floor(Math.random() * available.length);
+        selections.push(available.splice(index, 1)[0]);
+      }
+      return selections;
+    }
+
+    function prepareVocabularyList(rawList) {
+      const sanitized = [];
+      const seen = new Set();
+      rawList.forEach((entry) => {
+        const item = sanitizeVocabularyEntry(entry);
+        if (!item) return;
+        const key = item.word.toLowerCase();
+        if (seen.has(key)) return;
+        seen.add(key);
+        sanitized.push(item);
+      });
+
+      if (sanitized.length < DEFAULT_VOCAB_REQUIRED) {
+        const needed = DEFAULT_VOCAB_REQUIRED - sanitized.length;
+        const fillers = sampleBackupWords(needed, seen);
+        fillers.forEach((item) => {
+          const key = item.word.toLowerCase();
+          if (seen.has(key)) return;
+          seen.add(key);
+          sanitized.push(item);
+        });
+      }
+
+      return sanitized;
+    }
+
+    function updatePracticeToggle() {
+      if (!practiceToggle) return;
+      if (commandState.practiceMode === 'spelling') {
+        practiceToggle.textContent = 'Switch to Meaning Practice';
+      } else {
+        practiceToggle.textContent = 'Switch to Spelling Practice';
+      }
+    }
+
+    function updatePracticeToggleVisibility() {
+      if (!practiceToggle) return;
+      const shouldShow = commandView.classList.contains('active') && commandState.vocabulary.length > 0;
+      if (shouldShow) {
+        practiceToggle.classList.add('visible');
+      } else {
+        practiceToggle.classList.remove('visible');
+      }
+    }
+
+    function renderWeaponBar() {
+      if (!weaponBar) return;
+      weaponBar.innerHTML = '';
+      WEAPON_CONFIGS.forEach((weapon) => {
+        const cooldown = commandState.weaponCooldowns.get(weapon.key) || 0;
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'weapon-card';
+        card.dataset.weapon = weapon.key;
+        if (commandState.selectedWeapon === weapon.key) {
+          card.classList.add('active');
+        }
+        if (cooldown > 0) {
+          card.classList.add('cooldown');
+          card.disabled = true;
+        } else {
+          card.disabled = false;
+        }
+        const statusText = cooldown > 0 ? `${cooldown} turn${cooldown === 1 ? '' : 's'} remaining` : 'Ready';
+        card.innerHTML = `
+          <h3>${weapon.name}</h3>
+          <div class="weapon-stats">
+            <span>${weapon.description}</span>
+            <span>Damage x${weapon.damageMultiplier}</span>
+            <span>Cooldown: ${statusText}</span>
+          </div>
+        `;
+        card.addEventListener('click', () => handleWeaponSelection(weapon.key));
+        weaponBar.appendChild(card);
+      });
+    }
+
+    function getProgressForVocab(id) {
+      return commandState.progress.get(id) || null;
+    }
+
+    function renderVocabularyList() {
+      if (!vocabColumn) return;
+      vocabColumn.innerHTML = '';
+      if (!commandState.vocabulary.length) {
+        if (commandPlaceholder) {
+          commandPlaceholder.style.display = '';
+          vocabColumn.appendChild(commandPlaceholder);
+        }
+        return;
+      }
+      if (commandPlaceholder) {
+        commandPlaceholder.style.display = 'none';
+      }
+
+      commandState.vocabulary.forEach((entry) => {
+        const card = document.createElement('div');
+        card.className = 'vocab-card';
+        card.dataset.vocabId = String(entry.id);
+        const progress = getProgressForVocab(entry.id);
+        if (!commandState.selectedWeapon || (progress && progress.completed)) {
+          card.classList.add('disabled');
+        }
+        if (progress && progress.completed) {
+          card.classList.add('completed');
+        }
+
+        const title = document.createElement('h3');
+        title.style.margin = '0';
+        title.style.fontSize = '1.05rem';
+        title.style.letterSpacing = '0.03em';
+        title.textContent = commandState.practiceMode === 'spelling' ? entry.definition : entry.word;
+
+        const meta = document.createElement('div');
+        meta.style.opacity = '0.7';
+        meta.style.fontSize = '0.85rem';
+        if (commandState.practiceMode === 'spelling') {
+          meta.textContent = `Word length: ${entry.word.replace(/\s+/g, '').length}`;
+        } else {
+          meta.textContent = `Definition count: ${entry.examples.length}`;
+        }
+
+        card.appendChild(title);
+        card.appendChild(meta);
+
+        card.addEventListener('click', () => {
+          if (card.classList.contains('disabled')) return;
+          handleVocabSelection(entry);
+        });
+
+        vocabColumn.appendChild(card);
+      });
+    }
+
+    function setPracticeMode(mode) {
+      commandState.practiceMode = mode;
+      updatePracticeToggle();
+      renderVocabularyList();
+    }
+
+    function togglePracticeMode() {
+      const nextMode = commandState.practiceMode === 'spelling' ? 'meaning' : 'spelling';
+      setPracticeMode(nextMode);
+    }
+
+    function initializeCommandState(list) {
+      commandState.vocabulary = list.map((entry, index) => ({ ...entry, id: index + 1 }));
+      commandState.progress = new Map();
+      commandState.weaponCooldowns = new Map();
+      WEAPON_CONFIGS.forEach((weapon) => {
+        commandState.weaponCooldowns.set(weapon.key, 0);
+      });
+      commandState.selectedWeapon = null;
+      commandState.pendingSelection = null;
+      commandState.practiceMode = 'spelling';
+      renderWeaponBar();
+      renderVocabularyList();
+      updatePracticeToggle();
+      updatePracticeToggleVisibility();
+    }
+
+    function startCommandSession(list) {
+      const prepared = prepareVocabularyList(list);
+      if (!prepared.length) {
+        showMessageModal('Unable to start', 'No valid vocabulary entries were found.');
+        return;
+      }
+      initializeCommandState(prepared);
+    }
+
+    function handleWeaponSelection(weaponKey) {
+      if (targetingState.active) return;
+      const cooldown = commandState.weaponCooldowns.get(weaponKey) || 0;
+      if (cooldown > 0) return;
+      commandState.selectedWeapon = weaponKey;
+      renderWeaponBar();
+      renderVocabularyList();
+    }
+
+    function switchToMapMode() {
+      commandView.classList.remove('active');
+      mapView.classList.add('active');
+      modeToggle.textContent = 'Switch to Command Mode';
+      modeIndicator.textContent = 'Map Mode';
+      updatePracticeToggleVisibility();
+    }
+
+    function switchToCommandMode() {
+      mapView.classList.remove('active');
+      commandView.classList.add('active');
+      modeToggle.textContent = 'Switch to Map Mode';
+      modeIndicator.textContent = 'Command Mode';
+      updatePracticeToggleVisibility();
+    }
+
+    function resetTargetingState() {
+      targetingState.active = false;
+      targetingState.weaponKey = null;
+      targetingState.vocabId = null;
+      targetingState.phase = 0;
+      targetingState.startCell = null;
+      targetingState.direction = null;
+      targetingState.incorrectPenalty = 0;
+      commandState.pendingSelection = null;
+      clearPreviewCells();
+      clearSelectedCells();
+      clearDirectionOptions();
+      updateTargetingOverlay({ visible: false });
+    }
+
+    function buildMeaningOptions(entry) {
+      const exclude = new Set([entry.word.toLowerCase()]);
+      commandState.vocabulary.forEach((item) => {
+        if (item.id !== entry.id) {
+          exclude.add(item.word.toLowerCase());
+        }
+      });
+
+      const pool = commandState.vocabulary.filter((item) => item.id !== entry.id);
+      if (pool.length < 3) {
+        const needed = 3 - pool.length;
+        const fillers = sampleBackupWords(needed, exclude);
+        fillers.forEach((item) => {
+          pool.push({ ...item, id: `backup-${item.word}` });
+          exclude.add(item.word.toLowerCase());
+        });
+      }
+
+      const distractors = shuffleArray(pool)
+        .slice(0, 3)
+        .map((item) => ({ text: item.definition, correct: false }));
+
+      const options = [...distractors];
+      const insertIndex = Math.floor(Math.random() * (options.length + 1));
+      options.splice(insertIndex, 0, { text: entry.definition, correct: true });
+      return options;
+    }
+
+    function handleVocabSelection(entry) {
+      if (targetingState.active) return;
+      if (!commandState.selectedWeapon) return;
+      const progress = getProgressForVocab(entry.id);
+      if (progress && progress.completed) return;
+      if (commandState.practiceMode === 'spelling') {
+        openSpellingExercise(entry);
+      } else {
+        openMeaningExercise(entry);
+      }
+    }
+
+    function setPendingSelection(entry, weaponKey, data) {
+      commandState.pendingSelection = {
+        vocabId: entry.id,
+        weaponKey,
+        ...data
+      };
+    }
+
+    function openSpellingExercise(entry) {
+      const weaponKey = commandState.selectedWeapon;
+      if (!weaponKey) return;
+      const example = randomItem(entry.examples);
+      const blankedExample = example.replace(new RegExp(entry.word, 'gi'), '___');
+
+      openModal((container, close) => {
+        const heading = document.createElement('h2');
+        heading.textContent = 'Spelling Practice';
+        const definition = document.createElement('p');
+        definition.textContent = entry.definition;
+        const exampleEl = document.createElement('p');
+        exampleEl.textContent = blankedExample;
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = 'Type the vocabulary word';
+
+        const feedback = document.createElement('div');
+        feedback.className = 'answer-feedback';
+
+        const actions = document.createElement('div');
+        actions.className = 'modal-actions';
+
+        const submitBtn = document.createElement('button');
+        submitBtn.type = 'button';
+        submitBtn.textContent = 'Submit Answer';
+
+        const selectTargetBtn = document.createElement('button');
+        selectTargetBtn.type = 'button';
+        selectTargetBtn.textContent = 'Select Target';
+        selectTargetBtn.classList.add('primary');
+        selectTargetBtn.style.display = 'none';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.textContent = 'Cancel';
+
+        cancelBtn.addEventListener('click', () => {
+          close();
+        });
+
+        function evaluateAnswer() {
+          const answer = input.value.trim();
+          const sanitizedTarget = entry.word.replace(/\s+/g, '').toLowerCase();
+          const sanitizedAnswer = answer.replace(/\s+/g, '').toLowerCase();
+          const maxLen = Math.max(sanitizedTarget.length, sanitizedAnswer.length);
+          let incorrectLetters = 0;
+          for (let i = 0; i < maxLen; i++) {
+            const targetChar = sanitizedTarget[i] || '';
+            const answerChar = sanitizedAnswer[i] || '';
+            if (targetChar !== answerChar) {
+              incorrectLetters += 1;
+            }
+          }
+
+          feedback.innerHTML = '';
+          let ptr = 0;
+          for (const char of entry.word) {
+            const span = document.createElement('span');
+            if (char === ' ') {
+              span.textContent = '\u00A0';
+              span.style.opacity = '0.4';
+            } else {
+              const targetChar = sanitizedTarget[ptr] || '';
+              const answerChar = sanitizedAnswer[ptr] || '';
+              span.textContent = char;
+              span.classList.add(targetChar === answerChar ? 'correct' : 'incorrect');
+              ptr += 1;
+            }
+            feedback.appendChild(span);
+          }
+
+          input.disabled = true;
+          submitBtn.style.display = 'none';
+          selectTargetBtn.style.display = 'inline-flex';
+
+          setPendingSelection(entry, weaponKey, {
+            incorrectPenalty: incorrectLetters,
+            providedAnswer: answer,
+            correct: incorrectLetters === 0
+          });
+        }
+
+        submitBtn.addEventListener('click', () => {
+          evaluateAnswer();
+        });
+
+        input.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' && !input.disabled) {
+            event.preventDefault();
+            evaluateAnswer();
+          }
+        });
+
+        selectTargetBtn.addEventListener('click', () => {
+          const pending = commandState.pendingSelection;
+          if (!pending) return;
+          close();
+          beginTargetingFlow(entry, pending);
+        });
+
+        actions.appendChild(cancelBtn);
+        actions.appendChild(submitBtn);
+        actions.appendChild(selectTargetBtn);
+
+        container.appendChild(heading);
+        container.appendChild(definition);
+        container.appendChild(exampleEl);
+        container.appendChild(input);
+        container.appendChild(feedback);
+        container.appendChild(actions);
+        input.focus();
+      });
+    }
+
+    function openMeaningExercise(entry) {
+      const weaponKey = commandState.selectedWeapon;
+      if (!weaponKey) return;
+      const options = buildMeaningOptions(entry);
+
+      openModal((container, close) => {
+        const heading = document.createElement('h2');
+        heading.textContent = 'Meaning Practice';
+        const prompt = document.createElement('p');
+        prompt.textContent = `Select the correct definition for "${entry.word}".`;
+
+        const list = document.createElement('div');
+        list.className = 'options-list';
+
+        const actions = document.createElement('div');
+        actions.className = 'modal-actions';
+
+        const selectTargetBtn = document.createElement('button');
+        selectTargetBtn.type = 'button';
+        selectTargetBtn.textContent = 'Select Target';
+        selectTargetBtn.classList.add('primary');
+        selectTargetBtn.style.display = 'none';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.textContent = 'Cancel';
+
+        cancelBtn.addEventListener('click', () => {
+          close();
+        });
+
+        let resolved = false;
+
+        options.forEach((option, index) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.textContent = option.text;
+          button.addEventListener('click', () => {
+            if (resolved) return;
+            resolved = true;
+            button.classList.add('selected');
+            if (option.correct) {
+              button.classList.add('correct');
+            } else {
+              button.classList.add('incorrect');
+            }
+            list.querySelectorAll('button').forEach((btn, idx) => {
+              btn.disabled = true;
+              if (options[idx].correct) {
+                btn.classList.add('correct');
+              }
+            });
+
+            const incorrectPenalty = option.correct ? 0 : entry.word.replace(/\s+/g, '').length;
+            setPendingSelection(entry, weaponKey, {
+              incorrectPenalty,
+              selectedDefinition: option.text,
+              correct: option.correct
+            });
+
+            selectTargetBtn.style.display = 'inline-flex';
+          });
+          list.appendChild(button);
+        });
+
+        selectTargetBtn.addEventListener('click', () => {
+          const pending = commandState.pendingSelection;
+          if (!pending) return;
+          close();
+          beginTargetingFlow(entry, pending);
+        });
+
+        actions.appendChild(cancelBtn);
+        actions.appendChild(selectTargetBtn);
+
+        container.appendChild(heading);
+        container.appendChild(prompt);
+        container.appendChild(list);
+        container.appendChild(actions);
+      });
+    }
+
+    function beginTargetingFlow(entry, pending) {
+      const weapon = WEAPON_CONFIGS.find((w) => w.key === pending.weaponKey);
+      if (!weapon) return;
+      targetingState.active = true;
+      targetingState.weaponKey = weapon.key;
+      targetingState.vocabId = entry.id;
+      targetingState.phase = 1;
+      targetingState.startCell = null;
+      targetingState.direction = null;
+      targetingState.incorrectPenalty = pending.incorrectPenalty || 0;
+      clearPreviewCells();
+      clearSelectedCells();
+      clearDirectionOptions();
+      updateTargetingOverlay({
+        visible: true,
+        instruction: `Select starting cell for ${weapon.name}.`,
+        showConfirm: false,
+        showReselect: false,
+        showCancel: true,
+        confirmDisabled: true
+      });
+      switchToMapMode();
+    }
+
+    function handlePhaseOneSelection(cell) {
+      const weapon = WEAPON_CONFIGS.find((w) => w.key === targetingState.weaponKey);
+      if (!weapon) return;
+      targetingState.startCell = cell;
+      setSelectedCells([cell]);
+      if (weapon.phases === 1) {
+        const preview = computeWeaponCells(cell, weapon.key);
+        setPreviewCells(preview);
+        updateTargetingOverlay({
+          instruction: `Confirm strike coordinates for ${weapon.name}.`,
+          showConfirm: true,
+          showReselect: true,
+          confirmDisabled: false
+        });
+      } else {
+        targetingState.phase = 2;
+        let options = [];
+        if (weapon.pattern === 'triangle3') {
+          options = buildTriangleDirectionOptions(cell);
+        } else {
+          options = buildLineDirectionOptions(cell, weapon);
+        }
+        if (!options.length) {
+          updateTargetingOverlay({
+            instruction: 'No valid directions from this cell. Please reselect.',
+            showConfirm: false,
+            showReselect: true,
+            confirmDisabled: true
+          });
+          return;
+        }
+        highlightDirectionOptions(options);
+        updateTargetingOverlay({
+          instruction: 'Select a direction to finalize the strike path.',
+          showConfirm: false,
+          showReselect: true,
+          confirmDisabled: true
+        });
+      }
+    }
+
+    function handlePhaseTwoSelection(cell) {
+      const key = axialKey(cell.q, cell.r);
+      const option = targetingState.directionCellMap.get(key);
+      if (!option) return;
+      targetingState.direction = option;
+      setPreviewCells(option.cells);
+      setSelectedCells(option.cells);
+      updateTargetingOverlay({
+        instruction: 'Confirm strike coordinates.',
+        showConfirm: true,
+        showReselect: true,
+        confirmDisabled: false
+      });
+    }
+
+    function handleHexClick(event, cell) {
+      if (!targetingState.active) return;
+      event.preventDefault();
+      if (targetingState.phase === 1) {
+        handlePhaseOneSelection(cell);
+      } else if (targetingState.phase === 2) {
+        handlePhaseTwoSelection(cell);
+      }
+    }
+
+    function handleHexHover(cell) {
+      if (!targetingState.active) return;
+      if (targetingState.phase === 2) {
+        if (targetingState.direction) {
+          setPreviewCells(targetingState.direction.cells);
+          return;
+        }
+        const option = targetingState.directionCellMap.get(axialKey(cell.q, cell.r));
+        if (option) {
+          setPreviewCells(option.cells);
+        } else {
+          clearPreviewCells();
+        }
+      }
+    }
+
+    function handleHexLeave(cell) {
+      if (!targetingState.active) return;
+      if (targetingState.phase === 2 && !targetingState.direction) {
+        clearPreviewCells();
+      }
+    }
+
+    function getTargetCellsFromSelection(startCell) {
+      const weapon = WEAPON_CONFIGS.find((w) => w.key === targetingState.weaponKey);
+      if (!weapon) return [];
+      if (weapon.pattern === 'line3' || weapon.pattern === 'line5') {
+        const direction = targetingState.direction;
+        if (!direction) return [];
+        return getLineCells(startCell, direction.vector, weapon.pattern === 'line3' ? 3 : 5);
+      }
+      if (weapon.pattern === 'triangle3') {
+        const direction = targetingState.direction;
+        if (!direction) return [];
+        return getTriangleCells(startCell, direction.direction.key);
+      }
+      return computeWeaponCells(startCell, weapon.key);
+    }
+
+    function confirmTargetSelection() {
+      const weapon = WEAPON_CONFIGS.find((w) => w.key === targetingState.weaponKey);
+      const entry = commandState.vocabulary.find((v) => v.id === targetingState.vocabId);
+      if (!weapon || !entry || !targetingState.startCell) return;
+
+      let actualStart = targetingState.startCell;
+      if (targetingState.incorrectPenalty > 0) {
+        actualStart = displaceCellRandomly(targetingState.startCell, targetingState.incorrectPenalty);
+      }
+
+      const strikeCells = getTargetCellsFromSelection(actualStart).filter(Boolean);
+      if (!strikeCells.length) {
+        showMessageModal('Strike Drifted', 'The attack drifted outside the mission grid. Please reselect your target.');
+        return;
+      }
+
+      const baseDamage = entry.word.replace(/\s+/g, '').length;
+      const totalDamage = Math.round(baseDamage * weapon.damageMultiplier * 10) / 10;
+      applyDamageToCells(strikeCells, totalDamage);
+
+      commandState.weaponCooldowns.set(weapon.key, weapon.cooldown);
+      commandState.selectedWeapon = null;
+
+      const pending = commandState.pendingSelection || {};
+      commandState.progress.set(entry.id, {
+        completed: true,
+        weaponKey: weapon.key,
+        incorrectPenalty: targetingState.incorrectPenalty,
+        damage: totalDamage,
+        correct: pending.correct,
+        details: pending
+      });
+
+      renderWeaponBar();
+      renderVocabularyList();
+
+      advanceTurn();
+      saveProgress();
+      resetTargetingState();
+      switchToCommandMode();
+    }
+
+    function reselectTargetArea() {
+      if (!targetingState.active) return;
+      const weapon = WEAPON_CONFIGS.find((w) => w.key === targetingState.weaponKey);
+      targetingState.phase = 1;
+      targetingState.startCell = null;
+      targetingState.direction = null;
+      clearPreviewCells();
+      clearSelectedCells();
+      clearDirectionOptions();
+      updateTargetingOverlay({
+        instruction: weapon ? `Select starting cell for ${weapon.name}.` : 'Select starting cell.',
+        showConfirm: false,
+        showReselect: false,
+        confirmDisabled: true
+      });
+    }
+
+    function cancelTargeting() {
+      if (!targetingState.active) return;
+      resetTargetingState();
+      switchToCommandMode();
+    }
+
+    function serializeMapState() {
+      return {
+        turn: state.turn,
+        spawnPoints: state.spawnPoints.map((spawn) => ({ ...spawn })),
+        facilities: state.facilities.map((facility) => ({ ...facility })),
+        enemies: state.enemies.map((enemy) => ({ ...enemy })),
+        enemyCounts: { ...state.enemyCounts },
+        nextIds: {
+          spawn: state.nextSpawnId,
+          facility: state.nextFacilityId,
+          enemy: state.nextEnemyId
+        }
+      };
+    }
+
+    function serializeCommandState() {
+      return {
+        practiceMode: commandState.practiceMode,
+        vocabulary: commandState.vocabulary.map((entry) => ({ word: entry.word, definition: entry.definition, examples: entry.examples })),
+        progress: Array.from(commandState.progress.entries()),
+        weaponCooldowns: Array.from(commandState.weaponCooldowns.entries())
+      };
+    }
+
+    function saveProgress() {
+      if (typeof localStorage === 'undefined') return;
+      try {
+        const payload = {
+          map: serializeMapState(),
+          command: serializeCommandState()
+        };
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(payload));
+      } catch (error) {
+        console.warn('Unable to save progress', error);
+      }
+    }
+
+    function restoreMapState(mapData) {
+      if (!mapData) return;
+      resetState();
+      state.turn = mapData.turn || 0;
+      state.enemyCounts = mapData.enemyCounts ? { ...mapData.enemyCounts } : { light: 0, heavy: 0, tank: 0 };
+      state.nextSpawnId = mapData.nextIds?.spawn || state.nextSpawnId;
+      state.nextFacilityId = mapData.nextIds?.facility || state.nextFacilityId;
+      state.nextEnemyId = mapData.nextIds?.enemy || state.nextEnemyId;
+
+      (Array.isArray(mapData.spawnPoints) ? mapData.spawnPoints : []).forEach((spawnData) => {
+        const spawn = { ...spawnData };
+        state.spawnPoints.push(spawn);
+        const cell = getCell(spawn.q, spawn.r);
+        if (cell) {
+          registerOccupant(cell, {
+            renderType: 'spawn',
+            label: formatHealth(spawn.health),
+            contrast: 'dark',
+            entityType: 'spawn',
+            reference: spawn
+          });
+        }
+      });
+
+      (Array.isArray(mapData.facilities) ? mapData.facilities : []).forEach((facilityData) => {
+        const facility = { ...facilityData };
+        state.facilities.push(facility);
+        const cell = getCell(facility.q, facility.r);
+        if (cell) {
+          registerOccupant(cell, {
+            renderType: 'facility',
+            label: formatHealth(facility.health),
+            contrast: 'light',
+            entityType: 'facility',
+            reference: facility
+          });
+        }
+      });
+
+      (Array.isArray(mapData.enemies) ? mapData.enemies : []).forEach((enemyData) => {
+        const enemy = { ...enemyData };
+        state.enemies.push(enemy);
+        const cell = getCell(enemy.q, enemy.r);
+        if (cell) {
+          registerOccupant(cell, {
+            renderType: `enemy-${enemy.type}`,
+            label: formatHealth(enemy.health),
+            contrast: enemy.type === 'light' ? 'dark' : 'light',
+            entityType: 'enemy',
+            reference: enemy
+          });
+        }
+      });
+
+      refreshCounts();
+    }
+
+    function restoreCommandState(commandData) {
+      if (!commandData || !commandData.vocabulary || !commandData.vocabulary.length) return;
+      initializeCommandState(commandData.vocabulary);
+      commandState.practiceMode = commandData.practiceMode || 'spelling';
+      commandState.progress = new Map(commandData.progress || []);
+      commandState.weaponCooldowns = new Map(commandData.weaponCooldowns || []);
+      WEAPON_CONFIGS.forEach((weapon) => {
+        if (!commandState.weaponCooldowns.has(weapon.key)) {
+          commandState.weaponCooldowns.set(weapon.key, 0);
+        }
+      });
+      commandState.selectedWeapon = null;
+      commandState.pendingSelection = null;
+      setPracticeMode(commandState.practiceMode);
+      renderWeaponBar();
+    }
+
+    function loadProgress() {
+      if (typeof localStorage === 'undefined') return;
+      try {
+        const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (!stored) return;
+        const payload = JSON.parse(stored);
+        if (payload.map) {
+          restoreMapState(payload.map);
+        }
+        if (payload.command) {
+          restoreCommandState(payload.command);
+        }
+      } catch (error) {
+        console.warn('Unable to load saved progress', error);
+      }
+    }
+
     function createNewSpawnPoint() {
       if (state.spawnPoints.length >= CAP_SPAWN_POINTS) return;
       const candidates = availableNonEdgeCells();
@@ -839,6 +2803,12 @@
       }
 
       refreshCounts();
+      commandState.weaponCooldowns.forEach((value, key) => {
+        if (value > 0) {
+          commandState.weaponCooldowns.set(key, Math.max(0, value - 1));
+        }
+      });
+      renderWeaponBar();
     }
 
     function initialize() {
@@ -856,24 +2826,124 @@
       resetState();
       initializeObjects();
       refreshCounts();
-    });
-
-    modeToggle.addEventListener('click', () => {
-      const mapActive = mapView.classList.contains('active');
-      if (mapActive) {
-        mapView.classList.remove('active');
-        commandView.classList.add('active');
-        modeToggle.textContent = 'Switch to Map Mode';
-        modeIndicator.textContent = 'Command Mode';
-      } else {
-        commandView.classList.remove('active');
-        mapView.classList.add('active');
-        modeToggle.textContent = 'Switch to Command Mode';
-        modeIndicator.textContent = 'Map Mode';
+      commandState.weaponCooldowns = new Map();
+      WEAPON_CONFIGS.forEach((weapon) => commandState.weaponCooldowns.set(weapon.key, 0));
+      commandState.selectedWeapon = null;
+      renderWeaponBar();
+      renderVocabularyList();
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
       }
     });
 
+    modeToggle.addEventListener('click', () => {
+      if (mapView.classList.contains('active')) {
+        switchToCommandMode();
+      } else {
+        switchToMapMode();
+      }
+    });
+
+    practiceToggle.addEventListener('click', () => {
+      if (!commandState.vocabulary.length) return;
+      togglePracticeMode();
+    });
+
+    if (topbarToggle) {
+      topbarToggle.addEventListener('click', () => {
+        const hidden = commandTopbar.classList.toggle('hidden');
+        topbarToggle.textContent = hidden ? 'Show Controls' : 'Hide';
+      });
+    }
+
+    if (playBackupBtn) {
+      playBackupBtn.addEventListener('click', () => {
+        const selection = sampleBackupWords(DEFAULT_VOCAB_REQUIRED);
+        startCommandSession(selection);
+      });
+    }
+
+    if (vocabUpload) {
+      vocabUpload.addEventListener('change', (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const data = JSON.parse(reader.result);
+            const entries = Array.isArray(data) ? data : Array.isArray(data?.vocabulary) ? data.vocabulary : [];
+            if (!entries.length) {
+              showMessageModal('Invalid File', 'The uploaded file did not contain a vocabulary list.');
+              return;
+            }
+            const prepared = prepareVocabularyList(entries);
+            openModal((container, close) => {
+              const heading = document.createElement('h2');
+              heading.textContent = `Loaded ${prepared.length} vocabulary words`;
+              const preview = document.createElement('div');
+              preview.className = 'vocab-preview';
+              prepared.forEach((item) => {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'vocab-preview-item';
+                const wordEl = document.createElement('strong');
+                wordEl.textContent = item.word;
+                const defEl = document.createElement('p');
+                defEl.textContent = item.definition;
+                const examplesEl = document.createElement('ul');
+                item.examples.slice(0, 3).forEach((ex) => {
+                  const li = document.createElement('li');
+                  li.textContent = ex;
+                  examplesEl.appendChild(li);
+                });
+                itemEl.appendChild(wordEl);
+                itemEl.appendChild(defEl);
+                itemEl.appendChild(examplesEl);
+                preview.appendChild(itemEl);
+              });
+              const actions = document.createElement('div');
+              actions.className = 'modal-actions';
+              const startBtn = document.createElement('button');
+              startBtn.type = 'button';
+              startBtn.textContent = 'Start Mission';
+              startBtn.classList.add('primary');
+              startBtn.addEventListener('click', () => {
+                startCommandSession(prepared);
+                close();
+              });
+              const cancelBtn = document.createElement('button');
+              cancelBtn.type = 'button';
+              cancelBtn.textContent = 'Cancel';
+              cancelBtn.addEventListener('click', () => close());
+              actions.appendChild(cancelBtn);
+              actions.appendChild(startBtn);
+              container.appendChild(heading);
+              container.appendChild(preview);
+              container.appendChild(actions);
+            });
+          } catch (error) {
+            showMessageModal('Invalid File', 'Unable to parse the provided JSON file.');
+          }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+      });
+    }
+
+    confirmTargetBtn.addEventListener('click', () => {
+      confirmTargetSelection();
+    });
+
+    reselectTargetBtn.addEventListener('click', () => {
+      reselectTargetArea();
+    });
+
+    cancelTargetBtn.addEventListener('click', () => {
+      cancelTargeting();
+    });
+
     initialize();
+    loadProgress();
+    updatePracticeToggleVisibility();
   </script>
 </body>
 </html>
