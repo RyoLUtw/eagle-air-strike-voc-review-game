@@ -1,0 +1,72 @@
+This is a game for students to review vocabulary. The theme is an aircraft using multiple types of weapons to terminate targets. Each strike requires users to pick a specified number of words to spell and depending on spelling accuracy, the landing position would change.
+
+
+Design:
+a button on the bottom left corner to switch between map mode and command mode.
+
+Map mode:
+a hexagonal map with 5 cell on each side represent the mission area.
+
+
+On the map, 3 types of objects can be found: spawn point(purple), ally facility(blue) and enemy unit(color depends on class). They are distinguished by colored background.
+enemy units are divided into 3 classes: light(yellow), heavy(orange) and tank(red).
+active enemies are shown with colored background and remaining health(text with appropriate color for best visibility).
+3 spawn points and 4 ally facility are randomly determined in the begining of the game(must be at least one cell away from the edge cells to allow enemy units to surround the spawn points). 
+
+
+Each spawn point is surrounded by 3 light, 2 heavy and 1 tank unit. Enemy units are randomly positioned, surrounding the spawn point.
+
+Every 3 turns, enemy units spread (radially from the spawn point) one cell and one random class is spawn near the spawn point.
+Every 5 turns, a new spawn point is created (at a random position) with default enemy units(same as above) surrounding it.
+
+The total enemy object number is capped at 5 spawn point, 12 light, 8 heavy and 4 tank units.When the cap is reached, no ememies can be spawned. New spawn point still is created(every 5 turns), but without any enemy unit surrounding it upon creation. It can later resume the normal spawn of enemy units if the cap is not reached.
+When spawning enemy units:
+1. start with newest spawn point and proceed one by one to the oldest one. 
+2. spawning order of enemy class: light>>heavy>>tank.
+
+Each object has the following health points:
+1. spawn points: 5
+2. light enemy: 1
+3. heavy enemy: 2
+4. tank enemy: 4
+5. ally facility: 5
+
+
+Make all cap number and spawn number, health point number as gobal variable for easy modification.
+
+create a next round and seset button for testing(add comment before the code labeled "testing")
+
+
+
+
+command mode:
+This is where the player select what weapon they use. Damage caused equals to the length of a voc word(e.g. 3-letter word = 3 damage). If multiple words are required, damage equals to 
+
+Add a hidable top bar to allow user to upload json files for target vocabulary. Next to the upload button, add a play button to allow users to play without uploading voc(using 10 random words from backup vocabulary pool). Check if the user provides at lease 10 vocabulary. If not, fill in the missing ones with random vocabulary pulled from the back up pool(create this pool based on the pool list below)
+Automatically save player's progress after every attack in browser localstorage to allow players to continue their progress. Upon sucessful loading of json, use a modal to show a list of voc, with each voc and corresponding definiton and example sentences shown in one container. At the top of the modal, create a button to start the game. 
+
+
+Create a horizontal bar across the viewport with 5 different weapons:
+1. orbital laser strike (single cell, 1x damage,3 turns cooldown, user choose target cell)
+2. eagle air strike (straight line 3 cells, 0.5x damage,1 turn cooldown, user choose start and end cell)
+3. eagle straffing run (strait line 5 cells, 0.2x damage,1 turns cooldown, user choose start and end cell)
+4. 500 kg bomb (hexagonal area, 7 cells, 1x damage, 5 turns cooldown, user choose center cell)
+5. orbital precision strike (triangular area 3 cells, 0.5 damage, 1 turn cooldown, user choose starting cell and one of 4 directions(up,down,left,right))
+
+Make the attack area pattern(single cell, straigt line, hexagonal, traingular), number of cells, damge and cooldown global variable for easy access.
+
+
+Create a vertical column that occupies entire viewport width to contain the voc containers. add a button on the bottom right corner to switch between practice mode (spelling/meaning). This button is only displayed in command mode.
+Each voc is contained in one container. Inside the container, the definition/voc(depend on which practice mode is selected) is given to allow users to view. The voc container isn't interactable until a weapon is selected. After weapon selection, upon voc container clicked, a modal that occupies the entire viewport with 5% margin is showned. 
+
+In spelling practice mode, the modal contains the definition and 1 example sentence(randomly picked from 5) with the target word being blanked(use "___" to blank the target word). A text input field follows to allow users to input their answer. A submit button automatically checks the answer and display the correct answer below the input field, highlighting correct letters(green) and incorrect letters(red). Record the number of incorrect letters, which will be used to randomly displace the starting cell. After the submit button is clicked, the submit button is hidden and a select target button is shown, which switch the game to map mode for the player to choose the target. In meaning practice mode, the modal contains the 4 definitions(the correct definition and three pulled from other voc) for the users to pick.
+
+Target selection can have 1 to 2 phase depending on weapon type. 
+Orbital laser strike and 500 kg bomb have 1 phase and requires the user to choose a single cell. After clicking on a cell, display the selected cell with a green highlight,thickened border. for the 500 kg bomb, display the area (the cell selected and adjacent 6 cells). 
+eagle air strike, orbital precision strike, and eagle straffing run have 2 phase. 1st phase ask users to select 1 starting cell. 2nd phase ask users to choose the direction. When choosing direction, add a 50% opaque white background to all cells that are consider possible area and make the end cell(s) clickable while others not. For instance, for the eagle air strike, it has a straight line 3 cells range. In phase 2 choosing direction, 18 cells are highlighted, 3 in a line, six radial directions from the starting cell selected in phase 1. When any of the end cell is clicked, highlight all cells that belongs to that direction(including the end cell) with green, thickened border. And display a confirm button and reselect button for target confirmation(hide after clicked). Reselect button take the players back to Phase 1. Once confirmed, apply the damage to the enemies inside the attack area and update their remaining health. All cells will return to none-interactable after attack is confirmed.
+
+
+modification to current hexogonal map:
+hide the coordinate on map and set all background color to a neutral grey.
+
+
