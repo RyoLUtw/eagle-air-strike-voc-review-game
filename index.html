@@ -2008,10 +2008,14 @@
 
     function clearDirectionOptions() {
       targetingState.directionOptions.forEach((option) => {
-        option.cells.forEach((cell) => {
+        const highlightCells = option.__highlightCells || option.cells || [];
+        highlightCells.forEach((cell) => {
           cell.polygon.removeAttribute('data-option');
-          cell.polygon.removeAttribute('data-end-option');
         });
+        if (option.clickCell) {
+          option.clickCell.polygon.removeAttribute('data-end-option');
+        }
+        option.__highlightCells = undefined;
       });
       targetingState.directionOptions = [];
       targetingState.directionCellMap = new Map();
@@ -2022,7 +2026,9 @@
       targetingState.directionOptions = options;
       targetingState.directionCellMap = new Map();
       options.forEach((option) => {
-        option.cells.forEach((cell) => {
+        const highlightCells = option.highlightCells || option.cells || [];
+        option.__highlightCells = highlightCells;
+        highlightCells.forEach((cell) => {
           cell.polygon.dataset.option = 'true';
         });
         if (option.clickCell) {
@@ -2072,10 +2078,12 @@
         .map(({ q, r }) => getCell(q, r))
         .filter(Boolean)
         .forEach((neighbor) => {
-          const cells = [centerCell, neighbor];
           options.push({
             key: `eagleStrike-phase2-${neighbor.q}-${neighbor.r}`,
-            cells,
+            cells: [neighbor],
+            selectionCells: [neighbor],
+            previewCells: [neighbor],
+            highlightCells: [neighbor],
             clickCell: neighbor,
             targetCell: neighbor
           });
@@ -2106,6 +2114,9 @@
         options.push({
           key: `eagleStrike-phase3-${candidate.q}-${candidate.r}`,
           cells: [centerCell, secondCell, candidate],
+          selectionCells: [candidate],
+          previewCells: [candidate],
+          highlightCells: [candidate],
           clickCell: candidate,
           targetCell: candidate,
           vectorsFromCenter: [
@@ -3101,7 +3112,14 @@
           q: neighbor.q - center.q,
           r: neighbor.r - center.r
         };
-        setSelectedCells(option.cells);
+        const selectionCells = option.selectionCells || option.cells || [];
+        const previewCells = option.previewCells || selectionCells;
+        if (previewCells.length) {
+          setPreviewCells(previewCells);
+        } else {
+          clearPreviewCells();
+        }
+        setSelectedCells(selectionCells);
         const thirdOptions = buildEagleStrikePhaseThreeOptions(center, neighbor);
         if (!thirdOptions.length) {
           targetingState.phaseTwoCell = null;
@@ -3163,15 +3181,23 @@
           secondaryVector
         ];
       }
-      const selection = option.cells && option.cells.length
+      const selection = option.selectionCells && option.selectionCells.length
+        ? option.selectionCells
+        : (option.cells && option.cells.length
+          ? option.cells
+          : [center, second, option.targetCell || option.clickCell || cell]);
+      const previewCells = option.previewCells && option.previewCells.length
+        ? option.previewCells
+        : selection;
+      const resultCells = option.cells && option.cells.length
         ? option.cells
         : [center, second, option.targetCell || option.clickCell || cell];
       targetingState.direction = {
         key: option.key,
-        cells: selection,
+        cells: resultCells,
         vectorsFromCenter
       };
-      setPreviewCells(selection);
+      setPreviewCells(previewCells);
       setSelectedCells(selection);
       updateTargetingOverlay({
         instruction: 'Confirm strike coordinates.',
@@ -3197,8 +3223,15 @@
       if (!targetingState.active) return;
       if (targetingState.phase === 2 || targetingState.phase === 3) {
         const option = targetingState.directionCellMap.get(axialKey(cell.q, cell.r));
-        if (option && option.cells && option.cells.length) {
-          setPreviewCells(option.cells);
+        if (option) {
+          const previewCells = option.previewCells || option.cells || [];
+          if (previewCells.length) {
+            setPreviewCells(previewCells);
+          } else if (targetingState.direction && targetingState.direction.cells && targetingState.direction.cells.length) {
+            setPreviewCells(targetingState.direction.cells);
+          } else {
+            clearPreviewCells();
+          }
         } else if (targetingState.direction && targetingState.direction.cells && targetingState.direction.cells.length) {
           setPreviewCells(targetingState.direction.cells);
         } else {
