@@ -67,19 +67,16 @@
       flex: 1;
       display: flex;
       flex-direction: column;
-      overflow: hidden;
+      overflow-y: auto;
     }
 
-    .view {
+    .map-view {
       position: relative;
       flex: 1;
-      display: none;
-      padding: 1.5rem 1rem 4.5rem;
-    }
-
-    .view.active {
       display: flex;
       flex-direction: column;
+      padding: 1.5rem 1rem 4.5rem;
+      gap: 1.25rem;
     }
 
     .map-layout {
@@ -222,7 +219,7 @@
       flex-shrink: 0;
     }
 
-    .command-topbar {
+    .control-bar {
       display: flex;
       gap: 1rem;
       align-items: center;
@@ -230,11 +227,15 @@
       background: rgba(12, 18, 28, 0.92);
       border: 1px solid var(--panel-border);
       border-radius: 12px;
-      margin-bottom: 1rem;
       position: relative;
     }
 
-    .command-topbar.hidden {
+    .control-bar.collapsed {
+      padding-top: 0.75rem;
+      padding-bottom: 0.75rem;
+    }
+
+    .control-bar.collapsed > div {
       display: none;
     }
 
@@ -284,15 +285,6 @@
       min-height: 0;
     }
 
-    .command-layout {
-      display: flex;
-      flex-direction: column;
-      flex: 1;
-      gap: 1.25rem;
-      min-height: 0;
-      overflow: hidden;
-    }
-
     .weapon-bar {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -328,6 +320,11 @@
       opacity: 0.6;
     }
 
+    .weapon-card.disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+
     .weapon-card h3 {
       margin: 0;
       font-size: 1rem;
@@ -341,14 +338,10 @@
       opacity: 0.85;
     }
 
-    .vocab-column {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
+    .vocab-grid {
+      display: grid;
       gap: 1rem;
-      padding-bottom: 4rem;
-      overflow-y: auto;
-      min-height: 0;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     }
 
     .vocab-card {
@@ -415,6 +408,35 @@
       display: inline-flex;
       align-items: center;
       gap: 0.4rem;
+    }
+
+    .attack-report-button {
+      position: fixed;
+      top: 1.25rem;
+      right: 1.5rem;
+      padding: 0.65rem 1.2rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.08);
+      color: var(--text-light);
+      cursor: pointer;
+      letter-spacing: 0.05em;
+      display: none;
+      z-index: 7;
+      backdrop-filter: blur(6px);
+    }
+
+    .attack-report-button.visible {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .attack-report-button.unread {
+      background: rgba(70, 192, 255, 0.22);
+      border-color: rgba(70, 192, 255, 0.35);
+      color: var(--text-light);
+      box-shadow: 0 12px 28px rgba(70, 192, 255, 0.15);
     }
 
     .modal-backdrop {
@@ -727,10 +749,23 @@
 <body>
   <header class="app-header">
     <h1>Mission Interface</h1>
-    <div class="mode-indicator" id="modeIndicator">Map Mode</div>
+    <div class="mode-indicator" id="modeIndicator">Practice: Spelling</div>
   </header>
   <main>
-    <section class="view active" id="mapView" aria-label="Map mode">
+    <section class="map-view" id="mapView" aria-label="Mission map">
+      <div class="control-bar" id="controlBar">
+        <div>
+          <h2 style="margin: 0 0 0.35rem; font-size: 1.1rem; letter-spacing: 0.05em; text-transform: uppercase;">Mission Prep</h2>
+          <p style="margin: 0; opacity: 0.7; font-size: 0.85rem;">Upload custom vocabulary or deploy with backup intel.</p>
+        </div>
+        <div class="topbar-actions">
+          <input id="vocabUpload" class="file-input" type="file" accept="application/json" />
+          <label for="vocabUpload">Upload Vocabulary JSON</label>
+          <button type="button" id="playBackupBtn">Play with Backup Words</button>
+        </div>
+        <button type="button" id="topbarToggle" class="topbar-toggle" aria-expanded="true">Hide</button>
+      </div>
+      <div class="weapon-bar" id="weaponBar" role="list" aria-label="Weapon selection"></div>
       <div class="map-layout">
         <aside class="map-panel" aria-live="polite">
           <div class="turn-display">
@@ -789,32 +824,9 @@
         </div>
       </div>
     </section>
-    <section class="view" id="commandView" aria-label="Command mode">
-      <div class="command-layout">
-        <div class="command-topbar" id="commandTopbar">
-          <div>
-            <h2 style="margin: 0 0 0.35rem; font-size: 1.1rem; letter-spacing: 0.05em; text-transform: uppercase;">Command Prep</h2>
-            <p style="margin: 0; opacity: 0.7; font-size: 0.85rem;">Upload custom vocabulary or deploy with backup intel.</p>
-          </div>
-          <div class="topbar-actions">
-            <input id="vocabUpload" class="file-input" type="file" accept="application/json" />
-            <label for="vocabUpload">Upload Vocabulary JSON</label>
-            <button type="button" id="playBackupBtn">Play with Backup Words</button>
-          </div>
-          <button type="button" id="topbarToggle" class="topbar-toggle">Hide</button>
-        </div>
-        <div class="weapon-bar" id="weaponBar" role="list" aria-label="Weapon selection"></div>
-        <div class="vocab-column" id="vocabColumn">
-          <div class="placeholder" id="commandPlaceholder">
-            <strong>Awaiting Orders</strong>
-            <p>Load vocabulary to begin command operations. You can upload a JSON file or deploy with backup words.</p>
-          </div>
-        </div>
-      </div>
-    </section>
   </main>
-  <button class="mode-toggle" id="modeToggle" type="button">Switch to Command Mode</button>
   <button class="practice-toggle" id="practiceToggle" type="button" aria-live="polite">Switch to Meaning Practice</button>
+  <button class="attack-report-button" id="attackReportBtn" type="button" aria-live="polite">View Attack Report</button>
 
   <script>
     const HEX_SIDE = 5;
@@ -1281,18 +1293,14 @@
     const tankCountEl = document.getElementById('tankCount');
     const spawnTimerEl = document.getElementById('spawnTimer');
 
-    const modeToggle = document.getElementById('modeToggle');
-    const mapView = document.getElementById('mapView');
-    const commandView = document.getElementById('commandView');
     const modeIndicator = document.getElementById('modeIndicator');
-    const commandTopbar = document.getElementById('commandTopbar');
+    const controlBar = document.getElementById('controlBar');
     const topbarToggle = document.getElementById('topbarToggle');
     const vocabUpload = document.getElementById('vocabUpload');
     const playBackupBtn = document.getElementById('playBackupBtn');
     const weaponBar = document.getElementById('weaponBar');
-    const vocabColumn = document.getElementById('vocabColumn');
-    const commandPlaceholder = document.getElementById('commandPlaceholder');
     const practiceToggle = document.getElementById('practiceToggle');
+    const attackReportBtn = document.getElementById('attackReportBtn');
     const targetingOverlay = document.getElementById('targetingOverlay');
     const targetingInstruction = document.getElementById('targetingInstruction');
     const confirmTargetBtn = document.getElementById('confirmTargetBtn');
@@ -1333,11 +1341,13 @@
       incorrectPenalty: 0,
       previewCells: [],
       directionOptions: [],
-      directionCellMap: new Map()
+      directionCellMap: new Map(),
+      awaitingVocabulary: false
     };
 
     let activeModal = null;
     let lastStrikeCells = [];
+    let lastAttackSummary = null;
 
     function axialKey(q, r) {
       return `${q},${r}`;
@@ -1998,14 +2008,18 @@
       }
     }
 
-    function closeModal() {
+    function closeModal(reason) {
       if (!activeModal) return;
       document.removeEventListener('keydown', activeModal.keyListener);
-      activeModal.backdrop.remove();
+      const { backdrop, onClose } = activeModal;
+      backdrop.remove();
       activeModal = null;
+      if (typeof onClose === 'function') {
+        onClose(reason);
+      }
     }
 
-    function openModal(buildContent) {
+    function openModal(buildContent, options = {}) {
       closeModal();
       const backdrop = document.createElement('div');
       backdrop.className = 'modal-backdrop';
@@ -2013,24 +2027,26 @@
       content.className = 'modal-content';
       backdrop.appendChild(content);
 
+      const close = (reason) => closeModal(reason);
+
       const keyListener = (event) => {
         if (event.key === 'Escape') {
-          closeModal();
+          close('escape');
         }
       };
 
       backdrop.addEventListener('click', (event) => {
         if (event.target === backdrop) {
-          closeModal();
+          close('backdrop');
         }
       });
 
       document.body.appendChild(backdrop);
       document.addEventListener('keydown', keyListener);
 
-      activeModal = { backdrop, content, keyListener };
+      activeModal = { backdrop, content, keyListener, onClose: options.onClose || null };
 
-      buildContent(content, closeModal);
+      buildContent(content, close);
       return activeModal;
     }
 
@@ -2104,30 +2120,37 @@
         const actions = document.createElement('div');
         actions.className = 'modal-actions';
 
-        const stayBtn = document.createElement('button');
-        stayBtn.type = 'button';
-        stayBtn.textContent = 'Stay on Map';
-        stayBtn.addEventListener('click', () => {
-          close();
-        });
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.textContent = 'Close';
+        closeBtn.classList.add('primary');
+        closeBtn.addEventListener('click', () => close('close'));
 
-        const commandBtn = document.createElement('button');
-        commandBtn.type = 'button';
-        commandBtn.textContent = 'Return to Command Mode';
-        commandBtn.classList.add('primary');
-        commandBtn.addEventListener('click', () => {
-          close();
-          switchToCommandMode();
-        });
-
-        actions.appendChild(stayBtn);
-        actions.appendChild(commandBtn);
+        actions.appendChild(closeBtn);
 
         container.appendChild(heading);
         container.appendChild(description);
         container.appendChild(summary);
         container.appendChild(actions);
       });
+    }
+
+    function updateAttackReportButton(markUnread = false) {
+      if (!attackReportBtn) return;
+      if (lastAttackSummary) {
+        attackReportBtn.classList.add('visible');
+        if (markUnread) {
+          attackReportBtn.classList.add('unread');
+        }
+      } else {
+        attackReportBtn.classList.remove('visible');
+        attackReportBtn.classList.remove('unread');
+      }
+    }
+
+    function storeAttackSummary(summary) {
+      lastAttackSummary = summary;
+      updateAttackReportButton(true);
     }
 
     function sanitizeVocabularyEntry(entry) {
@@ -2201,7 +2224,7 @@
 
     function updatePracticeToggleVisibility() {
       if (!practiceToggle) return;
-      const shouldShow = commandView.classList.contains('active') && commandState.vocabulary.length > 0;
+      const shouldShow = commandState.vocabulary.length > 0;
       if (shouldShow) {
         practiceToggle.classList.add('visible');
       } else {
@@ -2209,9 +2232,21 @@
       }
     }
 
+    function updateModeIndicator() {
+      if (!modeIndicator) return;
+      if (!commandState.vocabulary.length) {
+        modeIndicator.textContent = 'Load vocabulary to begin';
+      } else {
+        const label = commandState.practiceMode === 'spelling' ? 'Spelling' : 'Meaning';
+        modeIndicator.textContent = `Practice: ${label}`;
+      }
+    }
+
     function renderWeaponBar() {
       if (!weaponBar) return;
       weaponBar.innerHTML = '';
+      const hasVocabulary = commandState.vocabulary.length > 0;
+      const targetingLocked = targetingState.active || targetingState.awaitingVocabulary;
       WEAPON_CONFIGS.forEach((weapon) => {
         const cooldown = commandState.weaponCooldowns.get(weapon.key) || 0;
         const card = document.createElement('button');
@@ -2221,22 +2256,30 @@
         if (commandState.selectedWeapon === weapon.key) {
           card.classList.add('active');
         }
+        const isDisabled = cooldown > 0 || !hasVocabulary || targetingLocked;
         if (cooldown > 0) {
           card.classList.add('cooldown');
-          card.disabled = true;
-        } else {
-          card.disabled = false;
         }
-        const statusText = cooldown > 0 ? `${cooldown} turn${cooldown === 1 ? '' : 's'} remaining` : 'Ready';
+        if (!hasVocabulary || targetingLocked) {
+          card.classList.add('disabled');
+        }
+        card.disabled = isDisabled;
+        const statusText = !hasVocabulary
+          ? 'Load vocabulary'
+          : targetingLocked
+            ? 'Targeting in progress'
+            : (cooldown > 0 ? `${cooldown} turn${cooldown === 1 ? '' : 's'} remaining` : 'Ready');
         card.innerHTML = `
           <h3>${weapon.name}</h3>
           <div class="weapon-stats">
             <span>${weapon.description}</span>
             <span>Damage x${weapon.damageMultiplier}</span>
-            <span>Cooldown: ${statusText}</span>
+            <span>Status: ${statusText}</span>
           </div>
         `;
-        card.addEventListener('click', () => handleWeaponSelection(weapon.key));
+        if (!isDisabled) {
+          card.addEventListener('click', () => handleWeaponSelection(weapon.key));
+        }
         weaponBar.appendChild(card);
       });
     }
@@ -2245,23 +2288,9 @@
       return commandState.progress.get(id) || null;
     }
 
-    function renderVocabularyList() {
-      if (!vocabColumn) return;
-      const previousScroll = vocabColumn.scrollTop;
-      vocabColumn.innerHTML = '';
-      if (!commandState.vocabulary.length) {
-        if (commandPlaceholder) {
-          commandPlaceholder.style.display = '';
-          vocabColumn.appendChild(commandPlaceholder);
-        }
-        vocabColumn.scrollTop = 0;
-        return;
-      }
-      if (commandPlaceholder) {
-        commandPlaceholder.style.display = 'none';
-      }
-
-      const sortedEntries = [...commandState.vocabulary].sort((a, b) => {
+    function getVocabularyDisplayEntries() {
+      if (!commandState.vocabulary.length) return [];
+      const sorted = [...commandState.vocabulary].sort((a, b) => {
         const aProgress = getProgressForVocab(a.id);
         const bProgress = getProgressForVocab(b.id);
         const aCompleted = Boolean(aProgress && aProgress.completed);
@@ -2269,78 +2298,34 @@
         if (aCompleted !== bCompleted) {
           return aCompleted ? 1 : -1;
         }
+        const aLocked = aProgress && typeof aProgress.lockedUntilTurn === 'number'
+          ? Math.max(0, aProgress.lockedUntilTurn - state.turn) > 0
+          : false;
+        const bLocked = bProgress && typeof bProgress.lockedUntilTurn === 'number'
+          ? Math.max(0, bProgress.lockedUntilTurn - state.turn) > 0
+          : false;
+        if (aLocked !== bLocked) {
+          return aLocked ? 1 : -1;
+        }
         return a.id - b.id;
       });
 
-      sortedEntries.forEach((entry) => {
-        const card = document.createElement('div');
-        card.className = 'vocab-card';
-        card.dataset.vocabId = String(entry.id);
+      return sorted.map((entry) => {
         const progress = getProgressForVocab(entry.id);
-        const isCompleted = Boolean(progress && progress.completed);
-        const roundsRemaining = progress
-          ? (typeof progress.lockedUntilTurn === 'number'
-              ? Math.max(0, progress.lockedUntilTurn - state.turn)
-              : Math.max(0, progress.lockoutRemaining || 0))
+        const roundsRemaining = progress && typeof progress.lockedUntilTurn === 'number'
+          ? Math.max(0, progress.lockedUntilTurn - state.turn)
           : 0;
+        const isCompleted = Boolean(progress && progress.completed);
         const isLocked = roundsRemaining > 0;
-        const clickable = Boolean(commandState.selectedWeapon && !isCompleted && !isLocked);
-        if (!clickable) {
-          card.classList.add('disabled');
-        }
-        if (isCompleted) {
-          card.classList.add('completed');
-        }
-        if (isLocked) {
-          card.classList.add('locked');
-        }
-
-        const title = document.createElement('h3');
-        title.style.margin = '0';
-        title.style.fontSize = '1.05rem';
-        title.style.letterSpacing = '0.03em';
-        title.textContent = commandState.practiceMode === 'spelling' ? entry.definition : entry.word;
-
-        const meta = document.createElement('div');
-        meta.style.opacity = '0.7';
-        meta.style.fontSize = '0.85rem';
-        if (commandState.practiceMode === 'spelling') {
-          meta.textContent = `Word length: ${entry.word.replace(/\s+/g, '').length}`;
-        } else {
-          meta.textContent = `Definition count: ${entry.examples.length}`;
-        }
-
-        card.appendChild(title);
-        card.appendChild(meta);
-
-        if (isCompleted || isLocked) {
-          const status = document.createElement('div');
-          status.className = 'vocab-status';
-          if (isCompleted) {
-            status.textContent = 'Completed';
-          } else if (isLocked) {
-            status.textContent = `Locked ${roundsRemaining} turn${roundsRemaining === 1 ? '' : 's'} remaining`;
-          }
-          card.appendChild(status);
-        }
-
-        card.addEventListener('click', () => {
-          if (!clickable) return;
-          handleVocabSelection(entry);
-        });
-
-        vocabColumn.appendChild(card);
+        return { entry, progress, isCompleted, isLocked, roundsRemaining };
       });
-
-      if (previousScroll > 0) {
-        vocabColumn.scrollTop = Math.min(previousScroll, vocabColumn.scrollHeight);
-      }
     }
 
     function setPracticeMode(mode) {
       commandState.practiceMode = mode;
       updatePracticeToggle();
-      renderVocabularyList();
+      updatePracticeToggleVisibility();
+      updateModeIndicator();
     }
 
     function togglePracticeMode() {
@@ -2349,6 +2334,7 @@
     }
 
     function initializeCommandState(list) {
+      resetTargetingState();
       commandState.vocabulary = list.map((entry, index) => ({ ...entry, id: index + 1 }));
       commandState.progress = new Map();
       commandState.weaponCooldowns = new Map();
@@ -2359,9 +2345,11 @@
       commandState.pendingSelection = null;
       commandState.practiceMode = 'spelling';
       renderWeaponBar();
-      renderVocabularyList();
       updatePracticeToggle();
       updatePracticeToggleVisibility();
+      updateModeIndicator();
+      lastAttackSummary = null;
+      updateAttackReportButton();
     }
 
     function startCommandSession(list) {
@@ -2374,29 +2362,16 @@
     }
 
     function handleWeaponSelection(weaponKey) {
-      if (targetingState.active) return;
+      if (targetingState.active || targetingState.awaitingVocabulary) return;
       const cooldown = commandState.weaponCooldowns.get(weaponKey) || 0;
       if (cooldown > 0) return;
+      if (!commandState.vocabulary.length) {
+        showMessageModal('No Vocabulary Loaded', 'Load vocabulary before initiating an attack.');
+        return;
+      }
       commandState.selectedWeapon = weaponKey;
       renderWeaponBar();
-      renderVocabularyList();
-    }
-
-    function switchToMapMode() {
-      commandView.classList.remove('active');
-      mapView.classList.add('active');
-      modeToggle.textContent = 'Switch to Command Mode';
-      modeIndicator.textContent = 'Map Mode';
-      updatePracticeToggleVisibility();
-    }
-
-    function switchToCommandMode() {
-      mapView.classList.remove('active');
-      commandView.classList.add('active');
-      modeToggle.textContent = 'Switch to Map Mode';
-      modeIndicator.textContent = 'Command Mode';
-      clearStrikeArea();
-      updatePracticeToggleVisibility();
+      startWeaponTargeting(weaponKey);
     }
 
     function resetTargetingState() {
@@ -2407,6 +2382,7 @@
       targetingState.startCell = null;
       targetingState.direction = null;
       targetingState.incorrectPenalty = 0;
+      targetingState.awaitingVocabulary = false;
       commandState.pendingSelection = null;
       clearPreviewCells();
       clearSelectedCells();
@@ -2442,11 +2418,119 @@
       return options;
     }
 
+    function openVocabularySelectionModal() {
+      const weapon = WEAPON_CONFIGS.find((w) => w.key === targetingState.weaponKey);
+      if (!weapon) return;
+      const entries = getVocabularyDisplayEntries();
+      targetingState.awaitingVocabulary = true;
+      renderWeaponBar();
+
+      openModal((container, close) => {
+        const heading = document.createElement('h2');
+        heading.textContent = 'Select Vocabulary';
+        const subtitle = document.createElement('p');
+        subtitle.textContent = `Choose a word to deploy the ${weapon.name}.`;
+        subtitle.style.marginTop = '0';
+
+        const grid = document.createElement('div');
+        grid.className = 'vocab-grid';
+        let selectableCount = 0;
+
+        entries.forEach(({ entry, isCompleted, isLocked, roundsRemaining }) => {
+          const card = document.createElement('button');
+          card.type = 'button';
+          card.className = 'vocab-card';
+          const title = document.createElement('h3');
+          title.style.margin = '0';
+          title.style.fontSize = '1.05rem';
+          title.style.letterSpacing = '0.03em';
+          title.textContent = commandState.practiceMode === 'spelling' ? entry.definition : entry.word;
+
+          const meta = document.createElement('div');
+          meta.style.opacity = '0.7';
+          meta.style.fontSize = '0.85rem';
+          meta.textContent = commandState.practiceMode === 'spelling'
+            ? `Word length: ${entry.word.replace(/\s+/g, '').length}`
+            : entry.definition;
+
+          card.appendChild(title);
+          card.appendChild(meta);
+
+          let statusText = '';
+          if (isCompleted) {
+            card.classList.add('completed');
+            statusText = 'Completed';
+          } else if (isLocked) {
+            card.classList.add('locked');
+            statusText = `Locked ${roundsRemaining} turn${roundsRemaining === 1 ? '' : 's'} remaining`;
+          }
+
+          if (statusText) {
+            const status = document.createElement('div');
+            status.className = 'vocab-status';
+            status.textContent = statusText;
+            card.appendChild(status);
+          }
+
+          const clickable = !isCompleted && !isLocked;
+          if (!clickable) {
+            card.classList.add('disabled');
+            card.disabled = true;
+          } else {
+            selectableCount += 1;
+            card.addEventListener('click', () => {
+              targetingState.vocabId = entry.id;
+              close('selected');
+              handleVocabSelection(entry);
+            });
+          }
+
+          grid.appendChild(card);
+        });
+
+        container.appendChild(heading);
+        container.appendChild(subtitle);
+        container.appendChild(grid);
+
+        if (!entries.length) {
+          const empty = document.createElement('p');
+          empty.textContent = 'Load vocabulary to begin the exercise.';
+          empty.style.opacity = '0.7';
+          container.appendChild(empty);
+        }
+
+        if (!selectableCount) {
+          const notice = document.createElement('p');
+          notice.textContent = 'No vocabulary is currently available. Wait for lockouts to expire or load more words.';
+          notice.style.opacity = '0.7';
+          notice.style.marginTop = '0.5rem';
+          container.appendChild(notice);
+        }
+
+        const actions = document.createElement('div');
+        actions.className = 'modal-actions';
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.textContent = 'Cancel Strike';
+        cancelBtn.addEventListener('click', () => close('cancelled'));
+        actions.appendChild(cancelBtn);
+        container.appendChild(actions);
+      }, {
+        onClose: (reason) => {
+          if (reason === 'selected') return;
+          targetingState.awaitingVocabulary = false;
+          cancelTargeting();
+        }
+      });
+    }
+
     function handleVocabSelection(entry) {
-      if (targetingState.active) return;
       if (!commandState.selectedWeapon) return;
       const progress = getProgressForVocab(entry.id);
       if (progress && progress.completed) return;
+      targetingState.vocabId = entry.id;
+      commandState.pendingSelection = null;
+      targetingState.incorrectPenalty = 0;
       if (commandState.practiceMode === 'spelling') {
         openSpellingExercise(entry);
       } else {
@@ -2463,7 +2547,7 @@
     }
 
     function openSpellingExercise(entry) {
-      const weaponKey = commandState.selectedWeapon;
+      const weaponKey = targetingState.weaponKey || commandState.selectedWeapon;
       if (!weaponKey) return;
       const example = randomItem(entry.examples);
       const blankedExample = example.replace(new RegExp(entry.word, 'gi'), '___');
@@ -2490,19 +2574,16 @@
         submitBtn.type = 'button';
         submitBtn.textContent = 'Submit Answer';
 
-        const selectTargetBtn = document.createElement('button');
-        selectTargetBtn.type = 'button';
-        selectTargetBtn.textContent = 'Select Target';
-        selectTargetBtn.classList.add('primary');
-        selectTargetBtn.style.display = 'none';
+        const confirmBtn = document.createElement('button');
+        confirmBtn.type = 'button';
+        confirmBtn.textContent = 'Confirm Attack Result';
+        confirmBtn.classList.add('primary');
+        confirmBtn.style.display = 'none';
 
         const cancelBtn = document.createElement('button');
         cancelBtn.type = 'button';
         cancelBtn.textContent = 'Cancel';
-
-        cancelBtn.addEventListener('click', () => {
-          close();
-        });
+        cancelBtn.addEventListener('click', () => close('cancelled'));
 
         function evaluateAnswer() {
           const answer = input.value.trim();
@@ -2537,8 +2618,9 @@
 
           input.disabled = true;
           submitBtn.style.display = 'none';
-          selectTargetBtn.style.display = 'inline-flex';
+          confirmBtn.style.display = 'inline-flex';
 
+          targetingState.incorrectPenalty = incorrectLetters;
           setPendingSelection(entry, weaponKey, {
             incorrectPenalty: incorrectLetters,
             providedAnswer: answer,
@@ -2557,16 +2639,16 @@
           }
         });
 
-        selectTargetBtn.addEventListener('click', () => {
+        confirmBtn.addEventListener('click', () => {
           const pending = commandState.pendingSelection;
           if (!pending) return;
-          close();
-          beginTargetingFlow(entry, pending);
+          close('confirmed');
+          executeAttack(entry, pending);
         });
 
         actions.appendChild(cancelBtn);
         actions.appendChild(submitBtn);
-        actions.appendChild(selectTargetBtn);
+        actions.appendChild(confirmBtn);
 
         container.appendChild(heading);
         container.appendChild(definition);
@@ -2575,11 +2657,18 @@
         container.appendChild(feedback);
         container.appendChild(actions);
         input.focus();
+      }, {
+        onClose: (reason) => {
+          if (reason === 'confirmed') return;
+          if (targetingState.awaitingVocabulary) {
+            setTimeout(() => openVocabularySelectionModal(), 0);
+          }
+        }
       });
     }
 
     function openMeaningExercise(entry) {
-      const weaponKey = commandState.selectedWeapon;
+      const weaponKey = targetingState.weaponKey || commandState.selectedWeapon;
       if (!weaponKey) return;
       const options = buildMeaningOptions(entry);
 
@@ -2595,19 +2684,16 @@
         const actions = document.createElement('div');
         actions.className = 'modal-actions';
 
-        const selectTargetBtn = document.createElement('button');
-        selectTargetBtn.type = 'button';
-        selectTargetBtn.textContent = 'Select Target';
-        selectTargetBtn.classList.add('primary');
-        selectTargetBtn.style.display = 'none';
+        const confirmBtn = document.createElement('button');
+        confirmBtn.type = 'button';
+        confirmBtn.textContent = 'Confirm Attack Result';
+        confirmBtn.classList.add('primary');
+        confirmBtn.style.display = 'none';
 
         const cancelBtn = document.createElement('button');
         cancelBtn.type = 'button';
         cancelBtn.textContent = 'Cancel';
-
-        cancelBtn.addEventListener('click', () => {
-          close();
-        });
+        cancelBtn.addEventListener('click', () => close('cancelled'));
 
         let resolved = false;
 
@@ -2632,44 +2718,53 @@
             });
 
             const incorrectPenalty = option.correct ? 0 : entry.word.replace(/\s+/g, '').length;
+            targetingState.incorrectPenalty = incorrectPenalty;
             setPendingSelection(entry, weaponKey, {
               incorrectPenalty,
               selectedDefinition: option.text,
               correct: option.correct
             });
 
-            selectTargetBtn.style.display = 'inline-flex';
+            confirmBtn.style.display = 'inline-flex';
           });
           list.appendChild(button);
         });
 
-        selectTargetBtn.addEventListener('click', () => {
+        confirmBtn.addEventListener('click', () => {
           const pending = commandState.pendingSelection;
           if (!pending) return;
-          close();
-          beginTargetingFlow(entry, pending);
+          close('confirmed');
+          executeAttack(entry, pending);
         });
 
         actions.appendChild(cancelBtn);
-        actions.appendChild(selectTargetBtn);
+        actions.appendChild(confirmBtn);
 
         container.appendChild(heading);
         container.appendChild(prompt);
         container.appendChild(list);
         container.appendChild(actions);
+      }, {
+        onClose: (reason) => {
+          if (reason === 'confirmed') return;
+          if (targetingState.awaitingVocabulary) {
+            setTimeout(() => openVocabularySelectionModal(), 0);
+          }
+        }
       });
     }
 
-    function beginTargetingFlow(entry, pending) {
-      const weapon = WEAPON_CONFIGS.find((w) => w.key === pending.weaponKey);
+    function startWeaponTargeting(weaponKey) {
+      const weapon = WEAPON_CONFIGS.find((w) => w.key === weaponKey);
       if (!weapon) return;
       targetingState.active = true;
       targetingState.weaponKey = weapon.key;
-      targetingState.vocabId = entry.id;
+      targetingState.vocabId = null;
       targetingState.phase = 1;
       targetingState.startCell = null;
       targetingState.direction = null;
-      targetingState.incorrectPenalty = pending.incorrectPenalty || 0;
+      targetingState.incorrectPenalty = 0;
+      targetingState.awaitingVocabulary = false;
       clearPreviewCells();
       clearSelectedCells();
       clearDirectionOptions();
@@ -2681,7 +2776,6 @@
         showCancel: true,
         confirmDisabled: true
       });
-      switchToMapMode();
     }
 
     function handlePhaseOneSelection(cell) {
@@ -2790,9 +2884,28 @@
     }
 
     function confirmTargetSelection() {
+      if (!targetingState.active) return;
       const weapon = WEAPON_CONFIGS.find((w) => w.key === targetingState.weaponKey);
-      const entry = commandState.vocabulary.find((v) => v.id === targetingState.vocabId);
-      if (!weapon || !entry || !targetingState.startCell) return;
+      if (!weapon || !targetingState.startCell) return;
+
+      const previewCells = getTargetCellsFromSelection(targetingState.startCell).filter(Boolean);
+      if (!previewCells.length) {
+        showMessageModal('Invalid Selection', 'The chosen coordinates are out of range. Please reselect.');
+        return;
+      }
+
+      setSelectedCells(previewCells);
+      clearPreviewCells();
+      clearDirectionOptions();
+      targetingState.active = false;
+      updateTargetingOverlay({ visible: false });
+      renderWeaponBar();
+      openVocabularySelectionModal();
+    }
+
+    function executeAttack(entry, pending) {
+      const weapon = WEAPON_CONFIGS.find((w) => w.key === targetingState.weaponKey);
+      if (!weapon || !targetingState.startCell) return;
 
       const originalStart = targetingState.startCell;
       const penalty = targetingState.incorrectPenalty || 0;
@@ -2803,7 +2916,11 @@
 
       const strikeCells = getTargetCellsFromSelection(actualStart).filter(Boolean);
       if (!strikeCells.length) {
-        showMessageModal('Strike Drifted', 'The attack drifted outside the mission grid. Please reselect your target.');
+        showMessageModal('Strike Drifted', 'The attack drifted outside the mission grid. The strike has been aborted.');
+        resetTargetingState();
+        commandState.selectedWeapon = null;
+        commandState.pendingSelection = null;
+        renderWeaponBar();
         return;
       }
 
@@ -2814,8 +2931,8 @@
       commandState.weaponCooldowns.set(weapon.key, weapon.cooldown);
       commandState.selectedWeapon = null;
 
-      const pending = commandState.pendingSelection || {};
-      const wasCorrect = Boolean(pending.correct);
+      const details = pending || {};
+      const wasCorrect = Boolean(details.correct);
       const previous = getProgressForVocab(entry.id) || {};
       const lockedUntilTurn = wasCorrect ? null : state.turn + INCORRECT_LOCKOUT_ROUNDS + 1;
       commandState.progress.set(entry.id, {
@@ -2825,7 +2942,7 @@
         incorrectPenalty: penalty,
         damage: totalDamage,
         correct: wasCorrect,
-        details: { ...pending },
+        details: { ...details },
         lockedUntilTurn,
         lastStrikeTurn: state.turn,
         lastStrike: strikeCells.map((cell) => ({ q: cell.q, r: cell.r })),
@@ -2833,18 +2950,23 @@
         actualStart: actualStart ? { q: actualStart.q, r: actualStart.r } : null
       });
 
-      renderWeaponBar();
-      renderVocabularyList();
+      commandState.pendingSelection = null;
 
       advanceTurn();
       saveProgress();
+
       const progressAfterAdvance = commandState.progress.get(entry.id);
       const roundsRemaining = progressAfterAdvance && typeof progressAfterAdvance.lockedUntilTurn === 'number'
         ? Math.max(0, progressAfterAdvance.lockedUntilTurn - state.turn)
         : 0;
+
       resetTargetingState();
+      renderWeaponBar();
+      updatePracticeToggleVisibility();
+      updateModeIndicator();
       markStrikeArea(strikeCells);
-      openAttackSummaryModal({
+
+      storeAttackSummary({
         entry,
         weapon,
         baseDamage,
@@ -2863,6 +2985,7 @@
       targetingState.phase = 1;
       targetingState.startCell = null;
       targetingState.direction = null;
+      targetingState.incorrectPenalty = 0;
       clearPreviewCells();
       clearSelectedCells();
       clearDirectionOptions();
@@ -2875,9 +2998,10 @@
     }
 
     function cancelTargeting() {
-      if (!targetingState.active) return;
+      if (!targetingState.active && !targetingState.awaitingVocabulary) return;
       resetTargetingState();
-      switchToCommandMode();
+      commandState.selectedWeapon = null;
+      renderWeaponBar();
     }
 
     function serializeMapState() {
@@ -3003,6 +3127,7 @@
         if (payload.command) {
           restoreCommandState(payload.command);
         }
+        updateAttackReportButton();
       } catch (error) {
         console.warn('Unable to load saved progress', error);
       }
@@ -3042,7 +3167,8 @@
         }
       });
       renderWeaponBar();
-      renderVocabularyList();
+      updatePracticeToggleVisibility();
+      updateModeIndicator();
     }
 
     function initialize() {
@@ -3061,33 +3187,40 @@
       resetState();
       initializeObjects();
       refreshCounts();
+      resetTargetingState();
       commandState.weaponCooldowns = new Map();
       WEAPON_CONFIGS.forEach((weapon) => commandState.weaponCooldowns.set(weapon.key, 0));
       commandState.selectedWeapon = null;
       renderWeaponBar();
-      renderVocabularyList();
+      updatePracticeToggleVisibility();
+      updateModeIndicator();
+      lastAttackSummary = null;
+      updateAttackReportButton();
       if (typeof localStorage !== 'undefined') {
         localStorage.removeItem(LOCAL_STORAGE_KEY);
       }
     });
 
-    modeToggle.addEventListener('click', () => {
-      if (mapView.classList.contains('active')) {
-        switchToCommandMode();
-      } else {
-        switchToMapMode();
-      }
-    });
-
     practiceToggle.addEventListener('click', () => {
       if (!commandState.vocabulary.length) return;
+      if (targetingState.active || targetingState.awaitingVocabulary) return;
       togglePracticeMode();
     });
 
     if (topbarToggle) {
       topbarToggle.addEventListener('click', () => {
-        const hidden = commandTopbar.classList.toggle('hidden');
-        topbarToggle.textContent = hidden ? 'Show Controls' : 'Hide';
+        if (!controlBar) return;
+        const collapsed = controlBar.classList.toggle('collapsed');
+        topbarToggle.textContent = collapsed ? 'Show Controls' : 'Hide';
+        topbarToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      });
+    }
+
+    if (attackReportBtn) {
+      attackReportBtn.addEventListener('click', () => {
+        if (!lastAttackSummary) return;
+        attackReportBtn.classList.remove('unread');
+        openAttackSummaryModal(lastAttackSummary);
       });
     }
 
@@ -3176,9 +3309,12 @@
       cancelTargeting();
     });
 
+    renderWeaponBar();
     initialize();
     loadProgress();
     updatePracticeToggleVisibility();
+    updateModeIndicator();
+    updateAttackReportButton();
   </script>
 </body>
 </html>
