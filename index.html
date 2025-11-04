@@ -295,6 +295,51 @@
       border: 1px solid var(--panel-border);
     }
 
+    .weapon-bar-wrapper {
+      position: relative;
+    }
+
+    .weapon-bar.awaiting-plan {
+      pointer-events: none;
+      opacity: 0.3;
+      filter: saturate(0.6);
+    }
+
+    .weapon-plan-overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      background: rgba(7, 11, 18, 0.82);
+      border: 1px solid var(--panel-border);
+      z-index: 3;
+      backdrop-filter: blur(6px);
+    }
+
+    .weapon-plan-overlay.visible {
+      display: flex;
+    }
+
+    .weapon-plan-overlay button {
+      padding: 1rem 2.5rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.28);
+      background: rgba(255,255,255,0.12);
+      color: var(--text-light);
+      font-size: 1.05rem;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-weight: 600;
+      box-shadow: 0 14px 32px rgba(0,0,0,0.45);
+    }
+
+    .weapon-plan-overlay button:hover {
+      background: rgba(255,255,255,0.18);
+    }
+
     .weapon-card {
       padding: 0.9rem;
       border-radius: 12px;
@@ -354,17 +399,21 @@
       gap: 0.5rem;
       transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
       cursor: pointer;
+      color: #ffffff;
     }
 
     .vocab-card.disabled {
-      opacity: 0.45;
+      opacity: 0.9;
+      background: rgba(255,255,255,0.78);
+      border-color: rgba(0,0,0,0.08);
+      color: #000000;
       cursor: not-allowed;
     }
 
     .vocab-card.completed {
-      background: rgba(120, 126, 138, 0.18);
-      border-color: rgba(255,255,255,0.08);
-      color: rgba(230, 233, 240, 0.65);
+      background: rgba(210, 214, 222, 0.8);
+      border-color: rgba(0,0,0,0.1);
+      color: #000000;
     }
 
     .vocab-card.locked {
@@ -376,7 +425,7 @@
       position: absolute;
       inset: 0;
       border-radius: inherit;
-      background: rgba(8, 12, 20, 0.45);
+      background: rgba(8, 12, 20, 0.25);
       pointer-events: none;
     }
 
@@ -402,6 +451,13 @@
       box-shadow: 0 14px 32px rgba(0,0,0,0.35);
       display: none;
       z-index: 11;
+    }
+
+    .practice-toggle:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      box-shadow: none;
+      filter: saturate(0.65);
     }
 
     .practice-toggle.visible {
@@ -762,10 +818,17 @@
           <input id="vocabUpload" class="file-input" type="file" accept="application/json" />
           <label for="vocabUpload">Upload Vocabulary JSON</label>
           <button type="button" id="playBackupBtn">Play with Backup Words</button>
+          <button type="button" id="newGameBtn">Restart Current Mission</button>
+          <button type="button" id="fullResetBtn">Full Reset</button>
         </div>
         <button type="button" id="topbarToggle" class="topbar-toggle" aria-expanded="true">Hide</button>
       </div>
-      <div class="weapon-bar" id="weaponBar" role="list" aria-label="Weapon selection"></div>
+      <div class="weapon-bar-wrapper">
+        <div class="weapon-bar" id="weaponBar" role="list" aria-label="Weapon selection"></div>
+        <div class="weapon-plan-overlay" id="weaponPlanOverlay" aria-hidden="true">
+          <button type="button" id="planNextAttackBtn">Plan Next Attack</button>
+        </div>
+      </div>
       <div class="map-layout">
         <aside class="map-panel" aria-live="polite">
           <div class="turn-display">
@@ -1270,10 +1333,12 @@
     ];
 
     const TRIANGLE_DIRECTIONS = [
-      { key: 'up', label: 'Up', primary: { q: 0, r: -1 }, wing: { q: 1, r: -1 } },
-      { key: 'down', label: 'Down', primary: { q: 0, r: 1 }, wing: { q: -1, r: 1 } },
-      { key: 'left', label: 'Left', primary: { q: -1, r: 0 }, wing: { q: -1, r: 1 } },
-      { key: 'right', label: 'Right', primary: { q: 1, r: 0 }, wing: { q: 1, r: -1 } }
+      { key: 'top', label: 'Top', vectors: [{ q: 0, r: -1 }, { q: 1, r: -1 }] },
+      { key: 'top-left', label: 'Top Left', vectors: [{ q: -1, r: 0 }, { q: 0, r: -1 }] },
+      { key: 'bottom-left', label: 'Bottom Left', vectors: [{ q: -1, r: 0 }, { q: -1, r: 1 }] },
+      { key: 'bottom', label: 'Bottom', vectors: [{ q: 0, r: 1 }, { q: -1, r: 1 }] },
+      { key: 'bottom-right', label: 'Bottom Right', vectors: [{ q: 0, r: 1 }, { q: 1, r: 0 }] },
+      { key: 'top-right', label: 'Top Right', vectors: [{ q: 1, r: 0 }, { q: 1, r: -1 }] }
     ];
 
     const LINE_DIRECTION_LABELS = ['E', 'NE', 'NW', 'W', 'SW', 'SE'];
@@ -1298,7 +1363,11 @@
     const topbarToggle = document.getElementById('topbarToggle');
     const vocabUpload = document.getElementById('vocabUpload');
     const playBackupBtn = document.getElementById('playBackupBtn');
+    const newGameBtn = document.getElementById('newGameBtn');
+    const fullResetBtn = document.getElementById('fullResetBtn');
     const weaponBar = document.getElementById('weaponBar');
+    const weaponPlanOverlay = document.getElementById('weaponPlanOverlay');
+    const planNextAttackBtn = document.getElementById('planNextAttackBtn');
     const practiceToggle = document.getElementById('practiceToggle');
     const attackReportBtn = document.getElementById('attackReportBtn');
     const targetingOverlay = document.getElementById('targetingOverlay');
@@ -1348,6 +1417,7 @@
     let activeModal = null;
     let lastStrikeCells = [];
     let lastAttackSummary = null;
+    let awaitingNextPlan = false;
 
     function axialKey(q, r) {
       return `${q},${r}`;
@@ -1498,6 +1568,10 @@
       state.nextFacilityId = 1;
       clearStrikeArea();
       clearOccupants();
+      awaitingNextPlan = false;
+      updatePlanNextAttackUI();
+      lastAttackSummary = null;
+      updateAttackReportButton();
     }
 
     function availableNonEdgeCells() {
@@ -1836,10 +1910,15 @@
     function getTriangleCells(startCell, directionOption) {
       const option = TRIANGLE_DIRECTIONS.find((dir) => dir.key === directionOption);
       if (!option) return [];
-      const primary = getCell(startCell.q + option.primary.q, startCell.r + option.primary.r);
-      const wing = getCell(startCell.q + option.wing.q, startCell.r + option.wing.r);
-      if (!primary || !wing) return [];
-      return [startCell, primary, wing];
+      const cells = [startCell];
+      for (const vector of option.vectors) {
+        const target = getCell(startCell.q + vector.q, startCell.r + vector.r);
+        if (!target) {
+          return [];
+        }
+        cells.push(target);
+      }
+      return cells;
     }
 
     function computeWeaponCells(startCell, weaponKey, directionOption) {
@@ -1978,7 +2057,7 @@
           label: direction.label,
           cells,
           direction,
-          clickCell: cells[1]
+          clickCell: cells[cells.length - 1]
         });
       });
       return options;
@@ -2153,6 +2232,17 @@
       updateAttackReportButton(true);
     }
 
+    function handlePlanNextAttack() {
+      if (!awaitingNextPlan) return;
+      clearStrikeArea();
+      awaitingNextPlan = false;
+      lastAttackSummary = null;
+      updateAttackReportButton();
+      updatePlanNextAttackUI();
+      advanceTurn();
+      saveProgress();
+    }
+
     function sanitizeVocabularyEntry(entry) {
       if (!entry) return null;
       const word = (entry.word || '').toString().trim();
@@ -2246,7 +2336,7 @@
       if (!weaponBar) return;
       weaponBar.innerHTML = '';
       const hasVocabulary = commandState.vocabulary.length > 0;
-      const targetingLocked = targetingState.active || targetingState.awaitingVocabulary;
+      const targetingLocked = targetingState.active || targetingState.awaitingVocabulary || awaitingNextPlan;
       WEAPON_CONFIGS.forEach((weapon) => {
         const cooldown = commandState.weaponCooldowns.get(weapon.key) || 0;
         const card = document.createElement('button');
@@ -2264,11 +2354,18 @@
           card.classList.add('disabled');
         }
         card.disabled = isDisabled;
-        const statusText = !hasVocabulary
-          ? 'Load vocabulary'
-          : targetingLocked
-            ? 'Targeting in progress'
-            : (cooldown > 0 ? `${cooldown} turn${cooldown === 1 ? '' : 's'} remaining` : 'Ready');
+        let statusText = 'Ready';
+        if (!hasVocabulary) {
+          statusText = 'Load vocabulary';
+        } else if (awaitingNextPlan) {
+          statusText = 'Awaiting plan confirmation';
+        } else if (targetingState.awaitingVocabulary) {
+          statusText = 'Select vocabulary';
+        } else if (targetingState.active) {
+          statusText = 'Targeting in progress';
+        } else if (cooldown > 0) {
+          statusText = `${cooldown} turn${cooldown === 1 ? '' : 's'} remaining`;
+        }
         card.innerHTML = `
           <h3>${weapon.name}</h3>
           <div class="weapon-stats">
@@ -2282,6 +2379,23 @@
         }
         weaponBar.appendChild(card);
       });
+      updatePlanNextAttackUI();
+    }
+
+    function updatePlanNextAttackUI() {
+      if (weaponBar) {
+        weaponBar.classList.toggle('awaiting-plan', awaitingNextPlan);
+      }
+      if (weaponPlanOverlay) {
+        weaponPlanOverlay.classList.toggle('visible', awaitingNextPlan);
+        weaponPlanOverlay.setAttribute('aria-hidden', awaitingNextPlan ? 'false' : 'true');
+      }
+      if (planNextAttackBtn) {
+        planNextAttackBtn.disabled = !awaitingNextPlan;
+      }
+      if (practiceToggle) {
+        practiceToggle.disabled = awaitingNextPlan;
+      }
     }
 
     function getProgressForVocab(id) {
@@ -2321,6 +2435,28 @@
       });
     }
 
+    function refreshVocabularyRosterIfComplete() {
+      if (!commandState.vocabulary.length) return;
+      let completedCount = 0;
+      commandState.vocabulary.forEach((entry) => {
+        const progress = commandState.progress.get(entry.id);
+        if (progress && progress.completed) {
+          completedCount += 1;
+        }
+      });
+      if (completedCount === commandState.vocabulary.length) {
+        commandState.vocabulary.forEach((entry) => {
+          const progress = commandState.progress.get(entry.id);
+          if (!progress) return;
+          commandState.progress.set(entry.id, {
+            ...progress,
+            completed: false,
+            lockedUntilTurn: null
+          });
+        });
+      }
+    }
+
     function setPracticeMode(mode) {
       commandState.practiceMode = mode;
       updatePracticeToggle();
@@ -2344,10 +2480,13 @@
       commandState.selectedWeapon = null;
       commandState.pendingSelection = null;
       commandState.practiceMode = 'spelling';
+      awaitingNextPlan = false;
+      clearStrikeArea();
       renderWeaponBar();
       updatePracticeToggle();
       updatePracticeToggleVisibility();
       updateModeIndicator();
+      updatePlanNextAttackUI();
       lastAttackSummary = null;
       updateAttackReportButton();
     }
@@ -2359,10 +2498,54 @@
         return;
       }
       initializeCommandState(prepared);
+      saveProgress();
+    }
+
+    function restartCurrentMission() {
+      if (!commandState.vocabulary.length) {
+        showMessageModal('No Vocabulary Loaded', 'Load vocabulary before restarting the mission.');
+        return;
+      }
+      const snapshot = commandState.vocabulary.map((entry) => ({
+        word: entry.word,
+        definition: entry.definition,
+        examples: [...entry.examples]
+      }));
+      initializeCommandState(snapshot);
+      resetState();
+      initializeObjects();
+      refreshCounts();
+      saveProgress();
+    }
+
+    function performCompleteReset() {
+      resetTargetingState();
+      commandState.vocabulary = [];
+      commandState.progress = new Map();
+      commandState.weaponCooldowns = new Map();
+      WEAPON_CONFIGS.forEach((weapon) => commandState.weaponCooldowns.set(weapon.key, 0));
+      commandState.selectedWeapon = null;
+      commandState.pendingSelection = null;
+      commandState.practiceMode = 'spelling';
+      awaitingNextPlan = false;
+      lastAttackSummary = null;
+      resetState();
+      initializeObjects();
+      refreshCounts();
+      updatePracticeToggle();
+      updatePracticeToggleVisibility();
+      updateModeIndicator();
+      renderWeaponBar();
+      updatePlanNextAttackUI();
+      updateAttackReportButton();
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
+      }
     }
 
     function handleWeaponSelection(weaponKey) {
       if (targetingState.active || targetingState.awaitingVocabulary) return;
+      if (awaitingNextPlan) return;
       const cooldown = commandState.weaponCooldowns.get(weaponKey) || 0;
       if (cooldown > 0) return;
       if (!commandState.vocabulary.length) {
@@ -2952,15 +3135,14 @@
 
       commandState.pendingSelection = null;
 
-      advanceTurn();
-      saveProgress();
-
-      const progressAfterAdvance = commandState.progress.get(entry.id);
-      const roundsRemaining = progressAfterAdvance && typeof progressAfterAdvance.lockedUntilTurn === 'number'
-        ? Math.max(0, progressAfterAdvance.lockedUntilTurn - state.turn)
+      const roundsRemaining = lockedUntilTurn != null
+        ? Math.max(0, lockedUntilTurn - (state.turn + 1))
         : 0;
 
+      refreshVocabularyRosterIfComplete();
+
       resetTargetingState();
+      awaitingNextPlan = true;
       renderWeaponBar();
       updatePracticeToggleVisibility();
       updateModeIndicator();
@@ -2977,6 +3159,8 @@
         wasCorrect,
         roundsRemaining
       });
+
+      saveProgress();
     }
 
     function reselectTargetArea() {
@@ -3024,7 +3208,10 @@
         practiceMode: commandState.practiceMode,
         vocabulary: commandState.vocabulary.map((entry) => ({ word: entry.word, definition: entry.definition, examples: entry.examples })),
         progress: Array.from(commandState.progress.entries()),
-        weaponCooldowns: Array.from(commandState.weaponCooldowns.entries())
+        weaponCooldowns: Array.from(commandState.weaponCooldowns.entries()),
+        awaitingNextPlan,
+        strikeHighlight: lastStrikeCells.map((cell) => cell ? { q: cell.q, r: cell.r } : null),
+        lastAttackSummary
       };
     }
 
@@ -3111,8 +3298,20 @@
       });
       commandState.selectedWeapon = null;
       commandState.pendingSelection = null;
+      awaitingNextPlan = Boolean(commandData.awaitingNextPlan);
+      lastAttackSummary = commandData.lastAttackSummary || null;
+      if (Array.isArray(commandData.strikeHighlight) && commandData.strikeHighlight.length) {
+        const cellsToMark = commandData.strikeHighlight
+          .map((coords) => coords ? getCell(coords.q, coords.r) : null)
+          .filter(Boolean);
+        if (cellsToMark.length) {
+          markStrikeArea(cellsToMark);
+        }
+      }
       setPracticeMode(commandState.practiceMode);
       renderWeaponBar();
+      updatePlanNextAttackUI();
+      updateAttackReportButton(awaitingNextPlan && Boolean(lastAttackSummary));
     }
 
     function loadProgress() {
@@ -3203,7 +3402,7 @@
 
     practiceToggle.addEventListener('click', () => {
       if (!commandState.vocabulary.length) return;
-      if (targetingState.active || targetingState.awaitingVocabulary) return;
+      if (targetingState.active || targetingState.awaitingVocabulary || awaitingNextPlan) return;
       togglePracticeMode();
     });
 
@@ -3224,10 +3423,28 @@
       });
     }
 
+    if (planNextAttackBtn) {
+      planNextAttackBtn.addEventListener('click', () => {
+        handlePlanNextAttack();
+      });
+    }
+
     if (playBackupBtn) {
       playBackupBtn.addEventListener('click', () => {
         const selection = sampleBackupWords(DEFAULT_VOCAB_REQUIRED);
         startCommandSession(selection);
+      });
+    }
+
+    if (newGameBtn) {
+      newGameBtn.addEventListener('click', () => {
+        restartCurrentMission();
+      });
+    }
+
+    if (fullResetBtn) {
+      fullResetBtn.addEventListener('click', () => {
+        performCompleteReset();
       });
     }
 
