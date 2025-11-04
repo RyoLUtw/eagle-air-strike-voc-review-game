@@ -934,8 +934,8 @@
         pattern: 'line3',
         damageMultiplier: 0.5,
         cooldown: 1,
-        phases: 2,
-        description: 'Three-cell line strike. Select start and direction.'
+        phases: 3,
+        description: 'Three-cell strike. Select center, adjacent, then extension.'
       },
       {
         key: 'eagleStraff',
@@ -1405,6 +1405,8 @@
       vocabId: null,
       phase: 0,
       startCell: null,
+      phaseTwoCell: null,
+      phaseTwoVector: null,
       selectionCells: [],
       direction: null,
       incorrectPenalty: 0,
@@ -2063,6 +2065,58 @@
       return options;
     }
 
+    function buildEagleStrikePhaseTwoOptions(centerCell) {
+      if (!centerCell) return [];
+      const options = [];
+      getNeighbors(centerCell.q, centerCell.r)
+        .map(({ q, r }) => getCell(q, r))
+        .filter(Boolean)
+        .forEach((neighbor) => {
+          const cells = [centerCell, neighbor];
+          options.push({
+            key: `eagleStrike-phase2-${neighbor.q}-${neighbor.r}`,
+            cells,
+            clickCell: neighbor,
+            targetCell: neighbor
+          });
+        });
+      return options;
+    }
+
+    function buildEagleStrikePhaseThreeOptions(centerCell, secondCell) {
+      if (!centerCell || !secondCell) return [];
+      const options = [];
+      const centerNeighborKeys = new Set(
+        getNeighbors(centerCell.q, centerCell.r).map(({ q, r }) => axialKey(q, r))
+      );
+      const primaryVector = {
+        q: secondCell.q - centerCell.q,
+        r: secondCell.r - centerCell.r
+      };
+      getNeighbors(secondCell.q, secondCell.r).forEach(({ q, r }) => {
+        const key = axialKey(q, r);
+        if (!centerNeighborKeys.has(key)) return;
+        if (key === axialKey(centerCell.q, centerCell.r)) return;
+        const candidate = getCell(q, r);
+        if (!candidate) return;
+        const secondaryVector = {
+          q: candidate.q - centerCell.q,
+          r: candidate.r - centerCell.r
+        };
+        options.push({
+          key: `eagleStrike-phase3-${candidate.q}-${candidate.r}`,
+          cells: [centerCell, secondCell, candidate],
+          clickCell: candidate,
+          targetCell: candidate,
+          vectorsFromCenter: [
+            { q: primaryVector.q, r: primaryVector.r },
+            secondaryVector
+          ]
+        });
+      });
+      return options;
+    }
+
     function updateTargetingOverlay(options = {}) {
       if (!targetingOverlay) return;
       if (options.visible === false) {
@@ -2563,6 +2617,8 @@
       targetingState.vocabId = null;
       targetingState.phase = 0;
       targetingState.startCell = null;
+      targetingState.phaseTwoCell = null;
+      targetingState.phaseTwoVector = null;
       targetingState.direction = null;
       targetingState.incorrectPenalty = 0;
       targetingState.awaitingVocabulary = false;
@@ -2945,15 +3001,20 @@
       targetingState.vocabId = null;
       targetingState.phase = 1;
       targetingState.startCell = null;
+      targetingState.phaseTwoCell = null;
+      targetingState.phaseTwoVector = null;
       targetingState.direction = null;
       targetingState.incorrectPenalty = 0;
       targetingState.awaitingVocabulary = false;
       clearPreviewCells();
       clearSelectedCells();
       clearDirectionOptions();
+      const initialInstruction = weapon.key === 'eagleStrike'
+        ? `Select center cell for ${weapon.name}.`
+        : `Select starting cell for ${weapon.name}.`;
       updateTargetingOverlay({
         visible: true,
-        instruction: `Select starting cell for ${weapon.name}.`,
+        instruction: initialInstruction,
         showConfirm: false,
         showReselect: false,
         showCancel: true,
@@ -2975,17 +3036,15 @@
           showReselect: true,
           confirmDisabled: false
         });
-      } else {
-        targetingState.phase = 2;
-        let options = [];
-        if (weapon.pattern === 'triangle3') {
-          options = buildTriangleDirectionOptions(cell);
-        } else {
-          options = buildLineDirectionOptions(cell, weapon);
-        }
+        return;
+      }
+
+      targetingState.phase = 2;
+      if (weapon.key === 'eagleStrike' && weapon.phases === 3) {
+        const options = buildEagleStrikePhaseTwoOptions(cell);
         if (!options.length) {
           updateTargetingOverlay({
-            instruction: 'No valid directions from this cell. Please reselect.',
+            instruction: 'No adjacent cells available. Please reselect the center.',
             showConfirm: false,
             showReselect: true,
             confirmDisabled: true
@@ -2994,21 +3053,126 @@
         }
         highlightDirectionOptions(options);
         updateTargetingOverlay({
-          instruction: 'Select a direction to finalize the strike path.',
+          instruction: 'Select an adjacent cell to orient the strike.',
           showConfirm: false,
           showReselect: true,
           confirmDisabled: true
         });
+        return;
       }
+
+      let options = [];
+      if (weapon.pattern === 'triangle3') {
+        options = buildTriangleDirectionOptions(cell);
+      } else {
+        options = buildLineDirectionOptions(cell, weapon);
+      }
+      if (!options.length) {
+        updateTargetingOverlay({
+          instruction: 'No valid directions from this cell. Please reselect.',
+          showConfirm: false,
+          showReselect: true,
+          confirmDisabled: true
+        });
+        return;
+      }
+      highlightDirectionOptions(options);
+      updateTargetingOverlay({
+        instruction: 'Select a direction to finalize the strike path.',
+        showConfirm: false,
+        showReselect: true,
+        confirmDisabled: true
+      });
     }
 
     function handlePhaseTwoSelection(cell) {
+      const weapon = WEAPON_CONFIGS.find((w) => w.key === targetingState.weaponKey);
       const key = axialKey(cell.q, cell.r);
       const option = targetingState.directionCellMap.get(key);
       if (!option) return;
+
+      if (weapon && weapon.key === 'eagleStrike' && weapon.phases === 3) {
+        const center = targetingState.startCell;
+        if (!center) return;
+        const neighbor = option.targetCell || option.clickCell;
+        if (!neighbor) return;
+        targetingState.phaseTwoCell = neighbor;
+        targetingState.phaseTwoVector = {
+          q: neighbor.q - center.q,
+          r: neighbor.r - center.r
+        };
+        setSelectedCells(option.cells);
+        const thirdOptions = buildEagleStrikePhaseThreeOptions(center, neighbor);
+        if (!thirdOptions.length) {
+          targetingState.phaseTwoCell = null;
+          targetingState.phaseTwoVector = null;
+          setSelectedCells([center]);
+          clearPreviewCells();
+          highlightDirectionOptions(buildEagleStrikePhaseTwoOptions(center));
+          updateTargetingOverlay({
+            instruction: 'No extension available from this orientation. Choose a different adjacent cell.',
+            showConfirm: false,
+            showReselect: true,
+            confirmDisabled: true
+          });
+          return;
+        }
+        targetingState.phase = 3;
+        targetingState.direction = null;
+        highlightDirectionOptions(thirdOptions);
+        clearPreviewCells();
+        updateTargetingOverlay({
+          instruction: 'Select a third cell adjacent to both highlighted cells.',
+          showConfirm: false,
+          showReselect: true,
+          confirmDisabled: true
+        });
+        return;
+      }
+
       targetingState.direction = option;
       setPreviewCells(option.cells);
       setSelectedCells(option.cells);
+      updateTargetingOverlay({
+        instruction: 'Confirm strike coordinates.',
+        showConfirm: true,
+        showReselect: true,
+        confirmDisabled: false
+      });
+    }
+
+    function handlePhaseThreeSelection(cell) {
+      const weapon = WEAPON_CONFIGS.find((w) => w.key === targetingState.weaponKey);
+      if (!weapon || weapon.key !== 'eagleStrike' || weapon.phases !== 3) return;
+      const key = axialKey(cell.q, cell.r);
+      const option = targetingState.directionCellMap.get(key);
+      if (!option) return;
+      const center = targetingState.startCell;
+      const second = targetingState.phaseTwoCell;
+      if (!center || !second) return;
+      const vectors = option.vectorsFromCenter || [];
+      let vectorsFromCenter = vectors.length === 2 ? vectors : null;
+      if (!vectorsFromCenter) {
+        const secondaryCell = option.targetCell || option.clickCell || cell;
+        const secondaryVector = secondaryCell
+          ? { q: secondaryCell.q - center.q, r: secondaryCell.r - center.r }
+          : null;
+        if (!targetingState.phaseTwoVector || !secondaryVector) return;
+        vectorsFromCenter = [
+          { q: targetingState.phaseTwoVector.q, r: targetingState.phaseTwoVector.r },
+          secondaryVector
+        ];
+      }
+      const selection = option.cells && option.cells.length
+        ? option.cells
+        : [center, second, option.targetCell || option.clickCell || cell];
+      targetingState.direction = {
+        key: option.key,
+        cells: selection,
+        vectorsFromCenter
+      };
+      setPreviewCells(selection);
+      setSelectedCells(selection);
       updateTargetingOverlay({
         instruction: 'Confirm strike coordinates.',
         showConfirm: true,
@@ -3024,19 +3188,19 @@
         handlePhaseOneSelection(cell);
       } else if (targetingState.phase === 2) {
         handlePhaseTwoSelection(cell);
+      } else if (targetingState.phase === 3) {
+        handlePhaseThreeSelection(cell);
       }
     }
 
     function handleHexHover(cell) {
       if (!targetingState.active) return;
-      if (targetingState.phase === 2) {
-        if (targetingState.direction) {
-          setPreviewCells(targetingState.direction.cells);
-          return;
-        }
+      if (targetingState.phase === 2 || targetingState.phase === 3) {
         const option = targetingState.directionCellMap.get(axialKey(cell.q, cell.r));
-        if (option) {
+        if (option && option.cells && option.cells.length) {
           setPreviewCells(option.cells);
+        } else if (targetingState.direction && targetingState.direction.cells && targetingState.direction.cells.length) {
+          setPreviewCells(targetingState.direction.cells);
         } else {
           clearPreviewCells();
         }
@@ -3045,7 +3209,7 @@
 
     function handleHexLeave(cell) {
       if (!targetingState.active) return;
-      if (targetingState.phase === 2 && !targetingState.direction) {
+      if ((targetingState.phase === 2 || targetingState.phase === 3) && !targetingState.direction) {
         clearPreviewCells();
       }
     }
@@ -3056,6 +3220,18 @@
       if (weapon.pattern === 'line3' || weapon.pattern === 'line5') {
         const direction = targetingState.direction;
         if (!direction) return [];
+        if (weapon.key === 'eagleStrike' && weapon.phases === 3 && Array.isArray(direction.vectorsFromCenter)) {
+          const cells = [startCell];
+          for (const vector of direction.vectorsFromCenter) {
+            const next = getCell(startCell.q + vector.q, startCell.r + vector.r);
+            if (!next) {
+              return [];
+            }
+            cells.push(next);
+          }
+          return cells;
+        }
+        if (!direction.vector) return [];
         return getLineCells(startCell, direction.vector, weapon.pattern === 'line3' ? 3 : 5);
       }
       if (weapon.pattern === 'triangle3') {
@@ -3174,7 +3350,9 @@
       clearSelectedCells();
       clearDirectionOptions();
       updateTargetingOverlay({
-        instruction: weapon ? `Select starting cell for ${weapon.name}.` : 'Select starting cell.',
+        instruction: weapon
+          ? (weapon.key === 'eagleStrike' ? `Select center cell for ${weapon.name}.` : `Select starting cell for ${weapon.name}.`)
+          : 'Select starting cell.',
         showConfirm: false,
         showReselect: false,
         confirmDisabled: true
