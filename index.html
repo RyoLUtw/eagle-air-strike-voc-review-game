@@ -416,6 +416,25 @@
       grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
     }
 
+    .vocab-tier-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      margin-top: 1rem;
+    }
+
+    .vocab-tier-section:first-of-type {
+      margin-top: 0.5rem;
+    }
+
+    .vocab-tier-heading {
+      margin: 0;
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.65;
+    }
+
     .vocab-card {
       border-radius: 14px;
       padding: 1rem 1.25rem;
@@ -838,6 +857,7 @@
           <label for="vocabUpload">Upload Vocabulary JSON</label>
           <button type="button" id="playBackupBtn">Play with Backup Words</button>
           <button type="button" id="newGameBtn">Restart Current Mission</button>
+          <button type="button" id="customGameBtn">Create Custom Mission</button>
           <button type="button" id="fullResetBtn">Full Reset</button>
         </div>
         <button type="button" id="topbarToggle" class="topbar-toggle" aria-expanded="true">Hide</button>
@@ -913,14 +933,19 @@
   <button class="practice-toggle" id="practiceToggle" type="button" aria-live="polite">Switch to Meaning Practice</button>
 
   <script>
-    const HEX_SIDE = 5;
-    const HEX_RADIUS = HEX_SIDE - 1;
+    const DEFAULT_GAME_SETTINGS = {
+      hexSide: 5,
+      initialSpawns: 3,
+      initialFacilities: 4,
+      initialEnemyConfig: { light: 3, heavy: 2, tank: 1 },
+      spawnInterval: 5,
+      spreadInterval: 3
+    };
 
-    const INITIAL_SPAWN_POINTS = 3;
-    const INITIAL_FACILITIES = 4;
-    const INITIAL_ENEMY_CONFIG = { light: 3, heavy: 2, tank: 1 };
+    let gameSettings = { ...DEFAULT_GAME_SETTINGS, initialEnemyConfig: { ...DEFAULT_GAME_SETTINGS.initialEnemyConfig } };
 
-    const CAP_SPAWN_POINTS = 5;
+    const DEFAULT_CAP_SPAWN_POINTS = 5;
+    let CAP_SPAWN_POINTS = DEFAULT_CAP_SPAWN_POINTS;
     const CAP_ENEMY = { light: 12, heavy: 8, tank: 4 };
 
     const HEALTH_VALUES = {
@@ -1385,6 +1410,7 @@
     const vocabUpload = document.getElementById('vocabUpload');
     const playBackupBtn = document.getElementById('playBackupBtn');
     const newGameBtn = document.getElementById('newGameBtn');
+    const customGameBtn = document.getElementById('customGameBtn');
     const fullResetBtn = document.getElementById('fullResetBtn');
     const weaponBar = document.getElementById('weaponBar');
     const weaponPlanOverlay = document.getElementById('weaponPlanOverlay');
@@ -1442,6 +1468,57 @@
     let lastAttackSummary = null;
     let awaitingNextPlan = false;
 
+    recalculateSpawnCap();
+
+    function clampValue(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function recalculateSpawnCap() {
+      CAP_SPAWN_POINTS = Math.max(DEFAULT_CAP_SPAWN_POINTS, gameSettings.initialSpawns);
+    }
+
+    function applyGameSettings(settings = {}, options = {}) {
+      const { rebuildGrid = true } = options;
+      if (typeof settings.hexSide === 'number') {
+        gameSettings.hexSide = clampValue(Math.round(settings.hexSide), 5, 10);
+      }
+      if (typeof settings.initialSpawns === 'number') {
+        gameSettings.initialSpawns = clampValue(Math.round(settings.initialSpawns), 1, 10);
+      }
+      if (typeof settings.initialFacilities === 'number') {
+        gameSettings.initialFacilities = clampValue(Math.round(settings.initialFacilities), 0, 10);
+      }
+      if (settings.initialEnemyConfig) {
+        const config = settings.initialEnemyConfig;
+        gameSettings.initialEnemyConfig = {
+          light: clampValue(Math.round(config.light ?? gameSettings.initialEnemyConfig.light), 0, 6),
+          heavy: clampValue(Math.round(config.heavy ?? gameSettings.initialEnemyConfig.heavy), 0, 6),
+          tank: clampValue(Math.round(config.tank ?? gameSettings.initialEnemyConfig.tank), 0, 6)
+        };
+      }
+      if (typeof settings.spawnInterval === 'number') {
+        gameSettings.spawnInterval = clampValue(Math.round(settings.spawnInterval), 3, 10);
+      }
+      if (typeof settings.spreadInterval === 'number') {
+        gameSettings.spreadInterval = clampValue(Math.round(settings.spreadInterval), 1, 5);
+      }
+
+      const capOverride = typeof settings.capSpawnPoints === 'number'
+        ? clampValue(Math.round(settings.capSpawnPoints), 1, 10)
+        : null;
+
+      recalculateSpawnCap();
+
+      if (capOverride !== null) {
+        CAP_SPAWN_POINTS = Math.max(DEFAULT_CAP_SPAWN_POINTS, gameSettings.initialSpawns, capOverride);
+      }
+
+      if (rebuildGrid) {
+        buildGrid();
+      }
+    }
+
     function axialKey(q, r) {
       return `${q},${r}`;
     }
@@ -1479,6 +1556,10 @@
       return copy;
     }
 
+    function getHexRadius() {
+      return Math.max(1, gameSettings.hexSide - 1);
+    }
+
     function buildGrid() {
       const hexSize = Number(getComputedStyle(document.documentElement).getPropertyValue('--hex-size')) || 38;
       const sqrt3 = Math.sqrt(3);
@@ -1503,10 +1584,11 @@
       }
 
       const positions = [];
-      for (let q = -HEX_RADIUS; q <= HEX_RADIUS; q++) {
-        for (let r = -HEX_RADIUS; r <= HEX_RADIUS; r++) {
+      const radius = getHexRadius();
+      for (let q = -radius; q <= radius; q++) {
+        for (let r = -radius; r <= radius; r++) {
           const s = -q - r;
-          if (Math.abs(s) <= HEX_RADIUS) {
+          if (Math.abs(s) <= radius) {
             positions.push({ q, r });
           }
         }
@@ -1598,9 +1680,10 @@
     }
 
     function availableNonEdgeCells() {
+      const radius = getHexRadius();
       return Array.from(cells.values()).filter((cell) => {
         const distance = Math.max(Math.abs(cell.q), Math.abs(cell.r), Math.abs(-cell.q - cell.r));
-        return distance < HEX_RADIUS && !cell.occupant;
+        return distance < radius && !cell.occupant;
       });
     }
 
@@ -1722,7 +1805,7 @@
     function initializeObjects() {
       const spawnCandidates = availableNonEdgeCells();
       const selectedSpawns = [];
-      for (let i = 0; i < INITIAL_SPAWN_POINTS; i++) {
+      for (let i = 0; i < gameSettings.initialSpawns; i++) {
         if (!spawnCandidates.length || state.spawnPoints.length >= CAP_SPAWN_POINTS) break;
         const cell = selectRandomCell(spawnCandidates);
         if (!cell) break;
@@ -1734,11 +1817,11 @@
         if (state.enemyCounts.light >= CAP_ENEMY.light && state.enemyCounts.heavy >= CAP_ENEMY.heavy && state.enemyCounts.tank >= CAP_ENEMY.tank) {
           return;
         }
-        spawnEnemiesAround(spawn, INITIAL_ENEMY_CONFIG);
+        spawnEnemiesAround(spawn, gameSettings.initialEnemyConfig);
       });
 
       const facilityCandidates = availableAnyCells();
-      for (let i = 0; i < INITIAL_FACILITIES; i++) {
+      for (let i = 0; i < gameSettings.initialFacilities; i++) {
         if (!facilityCandidates.length) break;
         const cell = selectRandomCell(facilityCandidates);
         if (!cell) break;
@@ -1754,9 +1837,10 @@
       heavyCountEl.textContent = state.enemyCounts.heavy;
       tankCountEl.textContent = state.enemyCounts.tank;
 
-      const remainder = state.turn % 3;
-      const turnsUntilSpread = remainder === 0 ? 3 : 3 - remainder;
-      spawnTimerEl.textContent = turnsUntilSpread;
+      const spawnInterval = Math.max(1, gameSettings.spawnInterval);
+      const remainder = state.turn % spawnInterval;
+      const turnsUntilSpawn = remainder === 0 ? spawnInterval : spawnInterval - remainder;
+      spawnTimerEl.textContent = turnsUntilSpawn;
     }
 
     function getSpawnById(id) {
@@ -2595,12 +2679,16 @@
         showMessageModal('No Vocabulary Loaded', 'Load vocabulary before restarting the mission.');
         return;
       }
+      const previousMode = commandState.practiceMode;
       const snapshot = commandState.vocabulary.map((entry) => ({
         word: entry.word,
         definition: entry.definition,
         examples: [...entry.examples]
       }));
       initializeCommandState(snapshot);
+      if (previousMode && previousMode !== commandState.practiceMode) {
+        setPracticeMode(previousMode);
+      }
       resetState();
       initializeObjects();
       refreshCounts();
@@ -2608,6 +2696,15 @@
     }
 
     function performCompleteReset() {
+      applyGameSettings({
+        hexSide: DEFAULT_GAME_SETTINGS.hexSide,
+        initialSpawns: DEFAULT_GAME_SETTINGS.initialSpawns,
+        initialFacilities: DEFAULT_GAME_SETTINGS.initialFacilities,
+        spawnInterval: DEFAULT_GAME_SETTINGS.spawnInterval,
+        spreadInterval: DEFAULT_GAME_SETTINGS.spreadInterval,
+        initialEnemyConfig: { ...DEFAULT_GAME_SETTINGS.initialEnemyConfig },
+        capSpawnPoints: DEFAULT_CAP_SPAWN_POINTS
+      });
       resetTargetingState();
       commandState.vocabulary = [];
       commandState.progress = new Map();
@@ -2630,6 +2727,237 @@
       if (typeof localStorage !== 'undefined') {
         localStorage.removeItem(LOCAL_STORAGE_KEY);
       }
+    }
+
+    function openCustomGameModal() {
+      if (!commandState.vocabulary.length) {
+        showMessageModal('No Vocabulary Loaded', 'Load vocabulary before configuring a custom mission.');
+        return;
+      }
+
+      const workingSettings = {
+        hexSide: gameSettings.hexSide,
+        initialSpawns: gameSettings.initialSpawns,
+        initialFacilities: gameSettings.initialFacilities,
+        spawnInterval: gameSettings.spawnInterval,
+        spreadInterval: gameSettings.spreadInterval,
+        initialEnemyConfig: { ...gameSettings.initialEnemyConfig }
+      };
+
+      const MAX_UNITS_PER_SPAWN = 6;
+
+      openModal((container, close) => {
+        const heading = document.createElement('h2');
+        heading.textContent = 'Custom Mission Parameters';
+        const blurb = document.createElement('p');
+        blurb.textContent = 'Adjust the battlefield layout and default enemy presence. Changes take effect immediately after confirmation.';
+        blurb.style.marginTop = '0';
+
+        container.appendChild(heading);
+        container.appendChild(blurb);
+
+        function createSliderRow(label, min, max, value, suffix, onChange) {
+          const row = document.createElement('div');
+          row.className = 'slider-row';
+          row.style.display = 'flex';
+          row.style.flexDirection = 'column';
+          row.style.gap = '0.35rem';
+          row.style.marginTop = '0.75rem';
+
+          const header = document.createElement('div');
+          header.style.display = 'flex';
+          header.style.justifyContent = 'space-between';
+          header.style.alignItems = 'center';
+
+          const labelEl = document.createElement('span');
+          labelEl.textContent = label;
+          const valueEl = document.createElement('strong');
+          valueEl.textContent = `${value}${suffix || ''}`;
+
+          header.appendChild(labelEl);
+          header.appendChild(valueEl);
+
+          const slider = document.createElement('input');
+          slider.type = 'range';
+          slider.min = `${min}`;
+          slider.max = `${max}`;
+          slider.value = `${value}`;
+          slider.style.width = '100%';
+          slider.style.cursor = 'pointer';
+          slider.addEventListener('input', () => {
+            const numeric = Number(slider.value);
+            valueEl.textContent = `${numeric}${suffix || ''}`;
+            onChange(numeric);
+          });
+
+          row.appendChild(header);
+          row.appendChild(slider);
+          return row;
+        }
+
+        const sliders = document.createElement('div');
+        sliders.appendChild(createSliderRow('Map Size (cells per side)', 5, 10, workingSettings.hexSide, ' cells', (value) => {
+          workingSettings.hexSide = value;
+        }));
+        sliders.appendChild(createSliderRow('Starting Spawn Points', 1, 10, workingSettings.initialSpawns, ' spawns', (value) => {
+          workingSettings.initialSpawns = value;
+        }));
+        sliders.appendChild(createSliderRow('Starting Ally Facilities', 0, 10, workingSettings.initialFacilities, ' facilities', (value) => {
+          workingSettings.initialFacilities = value;
+        }));
+        sliders.appendChild(createSliderRow('New Spawn Interval (turns)', 3, 10, workingSettings.spawnInterval, ' turns', (value) => {
+          workingSettings.spawnInterval = value;
+        }));
+        sliders.appendChild(createSliderRow('Enemy Spread Interval (turns)', 1, 5, workingSettings.spreadInterval, ' turns', (value) => {
+          workingSettings.spreadInterval = value;
+        }));
+
+        const enemySection = document.createElement('div');
+        enemySection.style.marginTop = '1rem';
+        enemySection.style.display = 'flex';
+        enemySection.style.flexDirection = 'column';
+        enemySection.style.gap = '0.6rem';
+
+        const enemyHeading = document.createElement('strong');
+        enemyHeading.textContent = 'Enemies per Spawn Point';
+        enemySection.appendChild(enemyHeading);
+
+        const remainingEl = document.createElement('span');
+        remainingEl.style.fontSize = '0.85rem';
+        remainingEl.style.opacity = '0.75';
+        enemySection.appendChild(remainingEl);
+
+        const enemyControls = document.createElement('div');
+        enemyControls.style.display = 'flex';
+        enemyControls.style.flexDirection = 'column';
+        enemyControls.style.gap = '0.5rem';
+
+        const enemyTypes = [
+          { key: 'light', label: 'Light Units' },
+          { key: 'heavy', label: 'Heavy Units' },
+          { key: 'tank', label: 'Tank Units' }
+        ];
+
+        const controlMap = new Map();
+
+        enemyTypes.forEach(({ key, label }) => {
+          const row = document.createElement('div');
+          row.style.display = 'flex';
+          row.style.alignItems = 'center';
+          row.style.gap = '0.75rem';
+
+          const name = document.createElement('span');
+          name.style.flex = '1';
+          name.textContent = label;
+
+          const minusBtn = document.createElement('button');
+          minusBtn.type = 'button';
+          minusBtn.textContent = '−';
+          minusBtn.style.width = '2.25rem';
+          minusBtn.style.height = '2.25rem';
+
+          const valueEl = document.createElement('strong');
+          valueEl.textContent = `${workingSettings.initialEnemyConfig[key]}`;
+          valueEl.style.minWidth = '1.5rem';
+          valueEl.style.textAlign = 'center';
+
+          const plusBtn = document.createElement('button');
+          plusBtn.type = 'button';
+          plusBtn.textContent = '+';
+          plusBtn.style.width = '2.25rem';
+          plusBtn.style.height = '2.25rem';
+
+          [minusBtn, plusBtn].forEach((btn) => {
+            btn.style.borderRadius = '8px';
+            btn.style.border = '1px solid rgba(255,255,255,0.25)';
+            btn.style.background = 'rgba(255,255,255,0.08)';
+            btn.style.color = '#fff';
+            btn.style.fontSize = '1.2rem';
+            btn.style.display = 'inline-flex';
+            btn.style.alignItems = 'center';
+            btn.style.justifyContent = 'center';
+          });
+
+          minusBtn.addEventListener('click', () => {
+            if (workingSettings.initialEnemyConfig[key] <= 0) return;
+            workingSettings.initialEnemyConfig[key] -= 1;
+            updateEnemyControls();
+          });
+
+          plusBtn.addEventListener('click', () => {
+            const total = totalEnemyUnits();
+            if (total >= MAX_UNITS_PER_SPAWN) return;
+            workingSettings.initialEnemyConfig[key] += 1;
+            updateEnemyControls();
+          });
+
+          row.appendChild(name);
+          row.appendChild(minusBtn);
+          row.appendChild(valueEl);
+          row.appendChild(plusBtn);
+          enemyControls.appendChild(row);
+
+          controlMap.set(key, { valueEl, minusBtn, plusBtn });
+        });
+
+        enemySection.appendChild(enemyControls);
+
+        container.appendChild(sliders);
+        container.appendChild(enemySection);
+
+        const actions = document.createElement('div');
+        actions.className = 'modal-actions';
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.addEventListener('click', () => {
+          targetingState.awaitingVocabulary = false;
+          renderWeaponBar();
+          close('cancelled');
+        });
+
+        const confirmBtn = document.createElement('button');
+        confirmBtn.type = 'button';
+        confirmBtn.classList.add('primary');
+        confirmBtn.textContent = 'Apply Settings';
+        confirmBtn.addEventListener('click', () => {
+          if (totalEnemyUnits() !== MAX_UNITS_PER_SPAWN) return;
+          applyGameSettings({
+            hexSide: workingSettings.hexSide,
+            initialSpawns: workingSettings.initialSpawns,
+            initialFacilities: workingSettings.initialFacilities,
+            spawnInterval: workingSettings.spawnInterval,
+            spreadInterval: workingSettings.spreadInterval,
+            initialEnemyConfig: { ...workingSettings.initialEnemyConfig }
+          });
+          restartCurrentMission();
+          close('confirmed');
+        });
+
+        actions.appendChild(cancelBtn);
+        actions.appendChild(confirmBtn);
+        container.appendChild(actions);
+
+        function totalEnemyUnits() {
+          return workingSettings.initialEnemyConfig.light + workingSettings.initialEnemyConfig.heavy + workingSettings.initialEnemyConfig.tank;
+        }
+
+        function updateEnemyControls() {
+          const total = totalEnemyUnits();
+          const remaining = MAX_UNITS_PER_SPAWN - total;
+          remainingEl.textContent = `Remaining units to assign: ${remaining}`;
+          confirmBtn.disabled = total !== MAX_UNITS_PER_SPAWN;
+
+          controlMap.forEach(({ valueEl, minusBtn, plusBtn }, key) => {
+            const current = workingSettings.initialEnemyConfig[key];
+            valueEl.textContent = `${current}`;
+            minusBtn.disabled = current === 0;
+            plusBtn.disabled = remaining === 0;
+          });
+        }
+
+        updateEnemyControls();
+      });
     }
 
     function handleWeaponSelection(weaponKey) {
@@ -2706,14 +3034,35 @@
         subtitle.textContent = `Choose a word to deploy the ${weapon.name}.`;
         subtitle.style.marginTop = '0';
 
-        const grid = document.createElement('div');
-        grid.className = 'vocab-grid';
         let selectableCount = 0;
+        const groupedCards = {
+          long: [],
+          medium: [],
+          short: [],
+          unavailable: []
+        };
 
-        entries.forEach(({ entry, isCompleted, isLocked, roundsRemaining }) => {
+        function getLengthTier(length) {
+          if (length >= 11) return 'long';
+          if (length >= 6) return 'medium';
+          return 'short';
+        }
+
+        const tierHeadings = {
+          long: 'Tier 11+ Letters',
+          medium: 'Tier 6-10 Letters',
+          short: 'Tier 1-5 Letters',
+          unavailable: 'Unavailable'
+        };
+
+        entries.forEach((info) => {
+          const { entry, isCompleted, isLocked, roundsRemaining } = info;
+          const length = entry.word.replace(/\s+/g, '').length;
+          const tier = getLengthTier(length);
           const card = document.createElement('button');
           card.type = 'button';
           card.className = 'vocab-card';
+
           const title = document.createElement('h3');
           title.style.margin = '0';
           title.style.fontSize = '1.05rem';
@@ -2724,13 +3073,11 @@
           meta.style.opacity = '0.7';
           meta.style.fontSize = '0.85rem';
           if (commandState.practiceMode === 'spelling') {
-            meta.textContent = `Word length: ${entry.word.replace(/\s+/g, '').length}`;
+            const tierLabel = tierHeadings[tier];
+            meta.textContent = tierLabel;
           } else {
             const sample = randomItem(entry.examples) || '';
-            const hiddenWord = sample
-              ? sample.replace(new RegExp(entry.word, 'gi'), '___')
-              : 'Example unavailable';
-            meta.textContent = hiddenWord;
+            meta.textContent = sample || 'Example unavailable';
           }
 
           card.appendChild(title);
@@ -2756,6 +3103,7 @@
           if (!clickable) {
             card.classList.add('disabled');
             card.disabled = true;
+            groupedCards.unavailable.push(card);
           } else {
             selectableCount += 1;
             card.addEventListener('click', () => {
@@ -2763,14 +3111,12 @@
               close('selected');
               handleVocabSelection(entry);
             });
+            groupedCards[tier].push(card);
           }
-
-          grid.appendChild(card);
         });
 
         container.appendChild(heading);
         container.appendChild(subtitle);
-        container.appendChild(grid);
 
         if (!entries.length) {
           const empty = document.createElement('p');
@@ -2779,7 +3125,23 @@
           container.appendChild(empty);
         }
 
-        if (!selectableCount) {
+        const orderedKeys = ['long', 'medium', 'short', 'unavailable'];
+        orderedKeys.forEach((key) => {
+          if (!groupedCards[key].length) return;
+          const section = document.createElement('div');
+          section.className = 'vocab-tier-section';
+          const tierHeading = document.createElement('h3');
+          tierHeading.className = 'vocab-tier-heading';
+          tierHeading.textContent = tierHeadings[key];
+          const tierGrid = document.createElement('div');
+          tierGrid.className = 'vocab-grid';
+          groupedCards[key].forEach((card) => tierGrid.appendChild(card));
+          section.appendChild(tierHeading);
+          section.appendChild(tierGrid);
+          container.appendChild(section);
+        });
+
+        if (!selectableCount && entries.length) {
           const notice = document.createElement('p');
           notice.textContent = 'No vocabulary is currently available. Wait for lockouts to expire or load more words.';
           notice.style.opacity = '0.7';
@@ -2792,7 +3154,11 @@
         const cancelBtn = document.createElement('button');
         cancelBtn.type = 'button';
         cancelBtn.textContent = 'Cancel Strike';
-        cancelBtn.addEventListener('click', () => close('cancelled'));
+        cancelBtn.addEventListener('click', () => {
+          targetingState.awaitingVocabulary = false;
+          renderWeaponBar();
+          close('cancelled');
+        });
         actions.appendChild(cancelBtn);
         container.appendChild(actions);
       }, {
@@ -3458,7 +3824,16 @@
         weaponCooldowns: Array.from(commandState.weaponCooldowns.entries()),
         awaitingNextPlan,
         strikeHighlight: lastStrikeCells.map((cell) => cell ? { q: cell.q, r: cell.r } : null),
-        lastAttackSummary
+        lastAttackSummary,
+        settings: {
+          hexSide: gameSettings.hexSide,
+          initialSpawns: gameSettings.initialSpawns,
+          initialFacilities: gameSettings.initialFacilities,
+          initialEnemyConfig: { ...gameSettings.initialEnemyConfig },
+          spawnInterval: gameSettings.spawnInterval,
+          spreadInterval: gameSettings.spreadInterval,
+          capSpawnPoints: CAP_SPAWN_POINTS
+        }
       };
     }
 
@@ -3534,6 +3909,9 @@
 
     function restoreCommandState(commandData) {
       if (!commandData || !commandData.vocabulary || !commandData.vocabulary.length) return;
+      if (commandData.settings) {
+        applyGameSettings(commandData.settings, { rebuildGrid: false });
+      }
       initializeCommandState(commandData.vocabulary);
       commandState.practiceMode = commandData.practiceMode || 'spelling';
       commandState.progress = new Map(commandData.progress || []);
@@ -3567,6 +3945,9 @@
         const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
         if (!stored) return;
         const payload = JSON.parse(stored);
+        if (payload.command && payload.command.settings) {
+          applyGameSettings(payload.command.settings, { rebuildGrid: true });
+        }
         if (payload.map) {
           restoreMapState(payload.map);
         }
@@ -3587,18 +3968,20 @@
       if (!cell) return;
       placeSpawn(cell);
       const spawn = state.spawnPoints[0];
-      spawnEnemiesAround(spawn, INITIAL_ENEMY_CONFIG);
+      spawnEnemiesAround(spawn, gameSettings.initialEnemyConfig);
     }
 
     function advanceTurn() {
       state.turn += 1;
 
-      if (state.turn % 3 === 0) {
+      const spreadInterval = Math.max(1, gameSettings.spreadInterval);
+      if (state.turn % spreadInterval === 0) {
         attemptEnemySpread();
         spawnEnemyWave();
       }
 
-      if (state.turn % 5 === 0) {
+      const spawnInterval = Math.max(1, gameSettings.spawnInterval);
+      if (state.turn % spawnInterval === 0) {
         const beforeCount = state.spawnPoints.length;
         createNewSpawnPoint();
         if (state.spawnPoints.length === beforeCount) {
@@ -3686,6 +4069,12 @@
     if (newGameBtn) {
       newGameBtn.addEventListener('click', () => {
         restartCurrentMission();
+      });
+    }
+
+    if (customGameBtn) {
+      customGameBtn.addEventListener('click', () => {
+        openCustomGameModal();
       });
     }
 
