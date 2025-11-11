@@ -1,117 +1,4220 @@
-<!-- ...existing code... -->
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Hexagon grid — side 5</title>
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Eagle Air Strike - Map Prototype</title>
   <style>
-    :root{
-      --hex-size: 36; /* adjust for hex size */
-      --stroke: #333;
-      --fill: #7fb3ff;
-      --fill-2: #a8e6a1;
+    :root {
+      --hex-size: 38;
+      --bg-dark: #10151f;
+      --panel-bg: rgba(20, 27, 39, 0.88);
+      --panel-border: rgba(255, 255, 255, 0.08);
+      --text-light: #f5f6fa;
+      --accent: #46c0ff;
+      --neutral-hex: #3a3f4b;
+      --spawn-color: #8844ee;
+      --facility-color: #2e86de;
+      --enemy-light: #f9d65c;
+      --enemy-heavy: #f39c3d;
+      --enemy-tank: #c0392b;
     }
-    html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto;}
-    .wrap{height:100%;display:flex;align-items:center;justify-content:center;background:#111;}
-    svg{background:linear-gradient(180deg,#0e1220,#0b0f16);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.6)}
-    polygon.hex{stroke:var(--stroke);stroke-width:1.5px;fill:var(--fill);opacity:0.95}
-    polygon.hex.alt{fill:var(--fill-2)}
-    text.coord{pointer-events:none;fill:#062;fill-opacity:0.95;font-size:11px;font-weight:600;text-anchor:middle;dominant-baseline:central}
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html, body {
+      height: 100%;
+      margin: 0;
+      font-family: "Segoe UI", Roboto, sans-serif;
+      background: var(--bg-dark);
+      color: var(--text-light);
+    }
+
+    body {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 5;
+      padding: 0.75rem 1.25rem;
+      background: linear-gradient(180deg, rgba(10, 15, 24, 0.95), rgba(10, 15, 24, 0.6));
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--panel-border);
+    }
+
+    .app-header h1 {
+      font-size: 1rem;
+      margin: 0;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.75;
+    }
+
+    .app-header .mode-indicator {
+      font-size: 0.9rem;
+      opacity: 0.6;
+    }
+
+    main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .map-view {
+      position: relative;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      padding: 1.5rem 1rem 4.5rem;
+      gap: 1.25rem;
+    }
+
+    .map-layout {
+      display: flex;
+      flex: 1;
+      gap: 1.5rem;
+      align-items: stretch;
+      justify-content: center;
+      position: relative;
+    }
+
+    .map-panel {
+      min-width: 280px;
+      max-width: 320px;
+      background: var(--panel-bg);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+
+    .map-panel h2 {
+      margin: 0;
+      font-size: 1.1rem;
+      letter-spacing: 0.04em;
+    }
+
+    .stat-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 0.6rem;
+      font-size: 0.9rem;
+    }
+
+    .stat {
+      padding: 0.55rem 0.65rem;
+      border-radius: 10px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      flex-direction: column;
+      gap: 0.2rem;
+    }
+
+    .stat span:first-child {
+      opacity: 0.65;
+      font-size: 0.75rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .stat span:last-child {
+      font-weight: 600;
+      font-size: 1rem;
+    }
+
+    .map-canvas {
+      flex: 1;
+      min-height: 460px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(12, 18, 28, 0.6);
+      border-radius: 18px;
+      border: 1px solid var(--panel-border);
+      box-shadow: 0 22px 45px rgba(0, 0, 0, 0.35);
+      padding: 1rem;
+    }
+
+    svg#mapSvg {
+      width: min(90vw, 640px);
+      height: min(90vw, 640px);
+    }
+
+    polygon.hex {
+      stroke: rgba(255, 255, 255, 0.14);
+      stroke-width: 1.4px;
+      fill: var(--neutral-hex);
+      transition: fill 120ms ease, stroke 120ms ease;
+    }
+
+    polygon.hex[data-type="spawn"] {
+      fill: var(--spawn-color);
+    }
+
+    polygon.hex[data-type="facility"] {
+      fill: var(--facility-color);
+    }
+
+    polygon.hex[data-type="enemy-light"] {
+      fill: var(--enemy-light);
+    }
+
+    polygon.hex[data-type="enemy-heavy"] {
+      fill: var(--enemy-heavy);
+    }
+
+    polygon.hex[data-type="enemy-tank"] {
+      fill: var(--enemy-tank);
+    }
+
+    polygon.hex[data-highlight="true"] {
+      stroke: #fff;
+      stroke-width: 2.4px;
+    }
+
+    text.cell-label {
+      font-size: 0.8rem;
+      font-weight: 600;
+      fill: rgba(255, 255, 255, 0.78);
+      pointer-events: none;
+    }
+
+    text.cell-label[data-contrast="dark"] {
+      fill: rgba(26, 32, 44, 0.95);
+    }
+
+    .legend {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      margin-top: 0.5rem;
+    }
+
+    .legend-item {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      font-size: 0.85rem;
+      opacity: 0.85;
+    }
+
+    .legend-swatch {
+      width: 18px;
+      height: 18px;
+      border-radius: 4px;
+      border: 1px solid rgba(0,0,0,0.25);
+      flex-shrink: 0;
+    }
+
+    .control-bar {
+      display: flex;
+      gap: 1rem;
+      align-items: center;
+      padding: 1rem 1.25rem;
+      background: rgba(12, 18, 28, 0.92);
+      border: 1px solid var(--panel-border);
+      border-radius: 12px;
+      position: relative;
+    }
+
+    .control-bar.collapsed {
+      padding-top: 0.75rem;
+      padding-bottom: 0.75rem;
+    }
+
+    .control-bar.collapsed > div {
+      display: none;
+    }
+
+    .topbar-actions {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .topbar-toggle {
+      position: absolute;
+      right: 1rem;
+      top: 1rem;
+      padding: 0.4rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.08);
+      color: var(--text-light);
+      cursor: pointer;
+      font-size: 0.8rem;
+      letter-spacing: 0.05em;
+    }
+
+    .file-input {
+      display: none;
+    }
+
+    .topbar-actions label,
+    .topbar-actions button {
+      padding: 0.7rem 1.2rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.2);
+      background: rgba(255,255,255,0.1);
+      color: var(--text-light);
+      cursor: pointer;
+      font-size: 0.9rem;
+      letter-spacing: 0.04em;
+    }
+
+    .topbar-actions label:hover,
+    .topbar-actions button:hover {
+      background: rgba(255,255,255,0.18);
+    }
+
+    .view.active {
+      min-height: 0;
+    }
+
+    .weapon-bar {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      padding: 1rem;
+      border-radius: 14px;
+      background: rgba(12, 18, 28, 0.8);
+      border: 1px solid var(--panel-border);
+    }
+
+    .weapon-bar-wrapper {
+      position: relative;
+    }
+
+    .weapon-bar.awaiting-plan {
+      pointer-events: none;
+      opacity: 0.3;
+      filter: saturate(0.6);
+    }
+
+    .weapon-plan-overlay {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      background: rgba(7, 11, 18, 0.82);
+      border: 1px solid var(--panel-border);
+      z-index: 3;
+      backdrop-filter: blur(6px);
+    }
+
+    .weapon-plan-overlay.visible {
+      display: flex;
+    }
+
+    .weapon-plan-overlay__content {
+      display: flex;
+      flex-direction: column;
+      gap: 1.1rem;
+      align-items: center;
+      text-align: center;
+    }
+
+    .overlay-action {
+      padding: 1rem 2.5rem;
+      border-radius: 999px;
+      border: none;
+      background: linear-gradient(120deg, rgba(255, 168, 76, 0.92), rgba(255, 111, 60, 0.92));
+      color: #0a0f18;
+      font-size: 1.05rem;
+      letter-spacing: 0.08em;
+      cursor: pointer;
+      text-transform: uppercase;
+      font-weight: 700;
+      box-shadow: 0 18px 36px rgba(255, 140, 66, 0.45);
+      min-width: 240px;
+      transition: transform 120ms ease, box-shadow 120ms ease;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.35rem;
+    }
+
+    .overlay-action:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 24px 46px rgba(255, 140, 66, 0.55);
+    }
+
+    .overlay-action:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      box-shadow: none;
+      transform: none;
+    }
+
+    .overlay-action.plan-highlight {
+      box-shadow: 0 26px 58px rgba(255, 168, 76, 0.6);
+      animation: pulse-glow 1.6s infinite alternate;
+    }
+
+    .weapon-card {
+      padding: 0.9rem;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      cursor: pointer;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+      min-height: 130px;
+      color: #fff;
+    }
+
+    .weapon-card.active {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 1px rgba(70, 192, 255, 0.35);
+      background: rgba(70, 192, 255, 0.12);
+    }
+
+    .weapon-card.cooldown {
+      cursor: not-allowed;
+      opacity: 0.6;
+    }
+
+    .weapon-card.disabled {
+      cursor: not-allowed;
+      opacity: 0.45;
+    }
+
+    .weapon-card h3 {
+      margin: 0;
+      font-size: 1rem;
+    }
+
+    .weapon-stats {
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+      font-size: 0.85rem;
+      opacity: 0.85;
+    }
+
+    .vocab-grid {
+      display: grid;
+      gap: 1rem;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    }
+
+    .vocab-tier-section {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+      margin-top: 1rem;
+    }
+
+    .vocab-tier-section:first-of-type {
+      margin-top: 0.5rem;
+    }
+
+    .vocab-tier-heading {
+      margin: 0;
+      font-size: 0.85rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      opacity: 0.65;
+    }
+
+    .vocab-card {
+      border-radius: 14px;
+      padding: 1rem 1.25rem;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      transition: transform 120ms ease, border-color 120ms ease, background 120ms ease;
+      cursor: pointer;
+      color: #ffffff;
+    }
+
+    .vocab-card.disabled {
+      opacity: 0.9;
+      background: rgba(255,255,255,0.78);
+      border-color: rgba(0,0,0,0.08);
+      color: #000000;
+      cursor: not-allowed;
+    }
+
+    .vocab-card.completed {
+      background: rgba(210, 214, 222, 0.8);
+      border-color: rgba(0,0,0,0.1);
+      color: #000000;
+    }
+
+    .vocab-card.locked {
+      position: relative;
+    }
+
+    .vocab-card.locked::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: inherit;
+      background: rgba(8, 12, 20, 0.25);
+      pointer-events: none;
+    }
+
+    .vocab-status {
+      font-size: 0.8rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      opacity: 0.65;
+    }
+
+    .practice-toggle {
+      position: fixed;
+      right: 1.5rem;
+      bottom: 1.5rem;
+      padding: 0.85rem 1.4rem;
+      background: rgba(70, 192, 255, 0.9);
+      border: none;
+      border-radius: 999px;
+      color: #071019;
+      font-weight: 600;
+      letter-spacing: 0.05em;
+      cursor: pointer;
+      box-shadow: 0 14px 32px rgba(0,0,0,0.35);
+      display: none;
+      z-index: 11;
+    }
+
+    .practice-toggle:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      box-shadow: none;
+      filter: saturate(0.65);
+    }
+
+    .practice-toggle.visible {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .attack-report-button {
+      display: none;
+    }
+
+    .attack-report-button.visible {
+      display: inline-flex;
+    }
+
+    .attack-report-button.unread {
+      animation: pulse-glow 1.6s infinite alternate;
+    }
+
+    @keyframes pulse-glow {
+      from {
+        box-shadow: 0 18px 36px rgba(255, 168, 76, 0.5);
+      }
+      to {
+        box-shadow: 0 26px 58px rgba(255, 168, 76, 0.75);
+      }
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.72);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      padding: 2rem;
+    }
+
+    .modal-content {
+      background: rgba(10, 15, 24, 0.95);
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.1);
+      width: min(800px, 90vw);
+      max-height: 90vh;
+      overflow: auto;
+      padding: 2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    .modal-actions {
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .modal-actions button {
+      padding: 0.7rem 1.4rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.1);
+      color: var(--text-light);
+      cursor: pointer;
+      letter-spacing: 0.04em;
+    }
+
+    .modal-actions button.primary {
+      background: var(--accent);
+      color: #06101b;
+      border-color: rgba(70,192,255,0.45);
+    }
+
+    .attack-summary {
+      display: grid;
+      gap: 0.6rem;
+    }
+
+    .attack-summary-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.6rem 0.8rem;
+      border-radius: 10px;
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.06);
+    }
+
+    .attack-summary-row span {
+      display: inline-flex;
+      align-items: center;
+    }
+
+    .attack-summary-row span.label {
+      opacity: 0.7;
+      font-size: 0.85rem;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+    }
+
+    .attack-summary-row span.value {
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+
+    .vocab-preview {
+      display: grid;
+      gap: 1rem;
+    }
+
+    .vocab-preview-item {
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.04);
+      padding: 1rem 1.25rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+
+    .exercise-content {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .exercise-content input[type="text"] {
+      padding: 0.75rem 1rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255,255,255,0.22);
+      background: rgba(0,0,0,0.2);
+      color: var(--text-light);
+      font-size: 1rem;
+    }
+
+    .answer-feedback {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.2rem;
+      font-size: 1.2rem;
+    }
+
+    .answer-feedback span.correct {
+      color: #4cd0ab;
+    }
+
+    .answer-feedback span.incorrect {
+      color: #e77f67;
+    }
+
+    .options-list {
+      display: grid;
+      gap: 0.75rem;
+    }
+
+    .options-list button {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.16);
+      background: rgba(255,255,255,0.06);
+      color: var(--text-light);
+      cursor: pointer;
+      letter-spacing: 0.03em;
+    }
+
+    .options-list button.selected.correct {
+      border-color: rgba(76, 209, 149, 0.7);
+      background: rgba(76, 209, 149, 0.12);
+    }
+
+    .options-list button.selected.incorrect {
+      border-color: rgba(231, 127, 103, 0.7);
+      background: rgba(231, 127, 103, 0.12);
+    }
+
+    .targeting-overlay {
+      position: absolute;
+      top: 1rem;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 0.8rem 1.2rem;
+      border-radius: 12px;
+      background: rgba(12, 18, 28, 0.92);
+      border: 1px solid rgba(255,255,255,0.14);
+      display: none;
+      flex-direction: column;
+      gap: 0.6rem;
+      z-index: 6;
+      min-width: 280px;
+      text-align: center;
+    }
+
+    .targeting-overlay.visible {
+      display: flex;
+    }
+
+    .targeting-overlay .actions {
+      display: flex;
+      gap: 0.75rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    .targeting-overlay button {
+      padding: 0.5rem 1.1rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.18);
+      background: rgba(255,255,255,0.08);
+      color: var(--text-light);
+      cursor: pointer;
+      letter-spacing: 0.04em;
+    }
+
+    .targeting-overlay button.confirm {
+      background: var(--accent);
+      color: #071019;
+      border-color: rgba(70,192,255,0.45);
+    }
+
+    polygon.hex[data-option="true"] {
+      fill: rgba(255, 255, 255, 0.45);
+    }
+
+    polygon.hex[data-preview="true"] {
+      stroke: #46c0ff;
+      stroke-width: 2.6px;
+    }
+
+    polygon.hex[data-selected="true"] {
+      stroke: #4cd0ab;
+      stroke-width: 3px;
+    }
+
+    polygon.hex[data-strike="true"] {
+      stroke: #b87333;
+      stroke-width: 3px;
+    }
+
+    .placeholder {
+      margin: auto;
+      padding: 2rem 2.5rem;
+      border: 1px dashed rgba(255,255,255,0.25);
+      border-radius: 16px;
+      background: rgba(255,255,255,0.02);
+      text-align: center;
+      max-width: 520px;
+      line-height: 1.6;
+      font-size: 1.1rem;
+    }
+
+    .mode-toggle {
+      position: fixed;
+      bottom: 1.25rem;
+      left: 1.25rem;
+      padding: 0.85rem 1.3rem;
+      background: var(--accent);
+      border: none;
+      border-radius: 999px;
+      color: #071019;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      cursor: pointer;
+      box-shadow: 0 12px 28px rgba(0, 0, 0, 0.35);
+      transition: transform 120ms ease, box-shadow 120ms ease;
+      z-index: 10;
+    }
+
+    .mode-toggle:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 32px rgba(0, 0, 0, 0.45);
+    }
+
+    .turn-display {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.75rem 1rem;
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.06);
+      font-size: 0.95rem;
+      letter-spacing: 0.05em;
+    }
+
+    .button-group {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .button-group button {
+      padding: 0.65rem 1.25rem;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text-light);
+      cursor: pointer;
+      letter-spacing: 0.04em;
+      transition: background 120ms ease, transform 120ms ease;
+    }
+
+    .button-group button:hover {
+      background: rgba(255, 255, 255, 0.14);
+      transform: translateY(-1px);
+    }
+
+    @media (max-width: 960px) {
+      .map-layout {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .map-panel {
+        max-width: none;
+        width: 100%;
+        order: 2;
+      }
+
+      .map-canvas {
+        order: 1;
+      }
+    }
+
+    @media (max-width: 720px) {
+      .practice-toggle {
+        right: 1rem;
+        bottom: 1rem;
+      }
+    }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <svg id="grid"></svg>
-  </div>
+  <header class="app-header">
+    <h1>Mission Interface</h1>
+    <div class="mode-indicator" id="modeIndicator">Practice: Spelling</div>
+  </header>
+  <main>
+    <section class="map-view" id="mapView" aria-label="Mission map">
+      <div class="control-bar" id="controlBar">
+        <div>
+          <h2 style="margin: 0 0 0.35rem; font-size: 1.1rem; letter-spacing: 0.05em; text-transform: uppercase;">Mission Prep</h2>
+          <p style="margin: 0; opacity: 0.7; font-size: 0.85rem;">Upload custom vocabulary or deploy with backup intel.</p>
+        </div>
+        <div class="topbar-actions">
+          <input id="vocabUpload" class="file-input" type="file" accept="application/json" />
+          <label for="vocabUpload">Upload Vocabulary JSON</label>
+          <button type="button" id="playBackupBtn">Play with Backup Words</button>
+          <button type="button" id="newGameBtn">Restart Current Mission</button>
+          <button type="button" id="customGameBtn">Create Custom Mission</button>
+          <button type="button" id="fullResetBtn">Full Reset</button>
+        </div>
+        <button type="button" id="topbarToggle" class="topbar-toggle" aria-expanded="true">Hide</button>
+      </div>
+      <div class="weapon-bar-wrapper">
+        <div class="weapon-bar" id="weaponBar" role="list" aria-label="Weapon selection"></div>
+        <div class="weapon-plan-overlay" id="weaponPlanOverlay" aria-hidden="true">
+          <div class="weapon-plan-overlay__content">
+            <button type="button" id="planNextAttackBtn" class="overlay-action plan-highlight">Plan Next Attack</button>
+            <button type="button" id="attackReportBtn" class="overlay-action" aria-live="polite">View Attack Report</button>
+          </div>
+        </div>
+      </div>
+      <div class="map-layout">
+        <aside class="map-panel" aria-live="polite">
+          <div class="turn-display">
+            <span>Turn</span>
+            <strong id="turnCounter">0</strong>
+          </div>
+          <div class="stat-list">
+            <div class="stat">
+              <span>Spawn Points</span>
+              <span id="spawnCount">0</span>
+            </div>
+            <div class="stat">
+              <span>Facilities</span>
+              <span id="facilityCount">0</span>
+            </div>
+            <div class="stat">
+              <span>Light Units</span>
+              <span id="lightCount">0</span>
+            </div>
+            <div class="stat">
+              <span>Heavy Units</span>
+              <span id="heavyCount">0</span>
+            </div>
+            <div class="stat">
+              <span>Tank Units</span>
+              <span id="tankCount">0</span>
+            </div>
+            <div class="stat">
+              <span>Next Spawn</span>
+              <span id="spawnTimer">3</span>
+            </div>
+          </div>
+          <div class="legend" aria-label="Map legend">
+            <div class="legend-item"><span class="legend-swatch" style="background: var(--spawn-color);"></span> Spawn Point</div>
+            <div class="legend-item"><span class="legend-swatch" style="background: var(--facility-color);"></span> Ally Facility</div>
+            <div class="legend-item"><span class="legend-swatch" style="background: var(--enemy-light);"></span> Light Enemy</div>
+            <div class="legend-item"><span class="legend-swatch" style="background: var(--enemy-heavy);"></span> Heavy Enemy</div>
+            <div class="legend-item"><span class="legend-swatch" style="background: var(--enemy-tank);"></span> Tank Enemy</div>
+          </div>
+          <div class="button-group">
+            <!-- testing -->
+            <button type="button" id="nextTurnBtn">Next Round</button>
+            <button type="button" id="resetBtn">Reset Simulation</button>
+          </div>
+        </aside>
+        <div class="map-canvas">
+          <svg id="mapSvg" role="presentation" aria-hidden="true"></svg>
+        </div>
+        <div class="targeting-overlay" id="targetingOverlay" aria-live="polite">
+          <div id="targetingInstruction">Select a target cell.</div>
+          <div class="actions">
+            <button type="button" id="confirmTargetBtn" class="confirm">Confirm</button>
+            <button type="button" id="reselectTargetBtn">Reselect</button>
+            <button type="button" id="cancelTargetBtn">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+  <button class="practice-toggle" id="practiceToggle" type="button" aria-live="polite">Switch to Meaning Practice</button>
 
   <script>
-    // create a pointy-top hexagon grid (axial coordinates)
-    // "side length 5" => radius = 4 (distance from center to any side)
-    (function(){
-      const side = 5;
-      const radius = side - 1; // 4
-      const hexSize = Number(getComputedStyle(document.documentElement).getPropertyValue('--hex-size')) || 36;
+    const DEFAULT_GAME_SETTINGS = {
+      hexSide: 5,
+      initialSpawns: 3,
+      initialFacilities: 4,
+      initialEnemyConfig: { light: 3, heavy: 2, tank: 1 },
+      spawnInterval: 5,
+      spreadInterval: 3
+    };
+
+    let gameSettings = { ...DEFAULT_GAME_SETTINGS, initialEnemyConfig: { ...DEFAULT_GAME_SETTINGS.initialEnemyConfig } };
+
+    const DEFAULT_CAP_SPAWN_POINTS = 5;
+    let CAP_SPAWN_POINTS = DEFAULT_CAP_SPAWN_POINTS;
+    const CAP_ENEMY = { light: 12, heavy: 8, tank: 4 };
+
+    const HEALTH_VALUES = {
+      spawn: 5,
+      facility: 5,
+      light: 1,
+      heavy: 2,
+      tank: 4
+    };
+
+    const ATTACK_PATTERNS = {
+      single: { cells: 1 },
+      line3: { cells: 3 },
+      line5: { cells: 5 },
+      hex7: { cells: 7 },
+      triangle3: { cells: 3 }
+    };
+
+    const WEAPON_CONFIGS = [
+      {
+        key: 'orbitalLaser',
+        name: 'Orbital Laser Strike',
+        pattern: 'single',
+        damageMultiplier: 1,
+        cooldown: 3,
+        phases: 1,
+        description: 'Precision hit on a single cell.'
+      },
+      {
+        key: 'eagleStrike',
+        name: 'Eagle Air Strike',
+        pattern: 'line3',
+        damageMultiplier: 0.5,
+        cooldown: 1,
+        phases: 2,
+        description: 'Three-cell line strike. Select start and direction.'
+      },
+      {
+        key: 'eagleStraff',
+        name: 'Eagle Straffing Run',
+        pattern: 'line5',
+        damageMultiplier: 0.2,
+        cooldown: 1,
+        phases: 2,
+        description: 'Five-cell line suppression run.'
+      },
+      {
+        key: 'bomb500kg',
+        name: '500 kg Bomb',
+        pattern: 'hex7',
+        damageMultiplier: 1,
+        cooldown: 5,
+        phases: 1,
+        description: 'Area blast covering center cell and neighbors.'
+      },
+      {
+        key: 'precisionStrike',
+        name: 'Orbital Precision Strike',
+        pattern: 'triangle3',
+        damageMultiplier: 0.5,
+        cooldown: 1,
+        phases: 3,
+        description: 'Triangular strike. Select center, adjacent, then extension.'
+      }
+    ];
+
+    const LOCAL_STORAGE_KEY = 'eagleAirStrikeProgress';
+    const DEFAULT_VOCAB_REQUIRED = 10;
+    const INCORRECT_LOCKOUT_ROUNDS = 2;
+
+    const BACKUP_VOCAB = [
+      { word: 'arrive', definition: 'to come to a place', examples: [
+        'We waited for the bus to arrive at the station.',
+        'She arrived home late after work.',
+        'Let me know when you arrive safely.',
+        'The guests arrived just in time for dinner.',
+        'We arrived at school before the bell rang.'
+      ]},
+      { word: 'borrow', definition: 'to take something for a short time', examples: [
+        'Can I borrow your pen and give it back later?',
+        'I borrowed a book from the library.',
+        'He borrowed money from his friend.',
+        'Don’t forget to return what you borrow.',
+        'She borrowed my umbrella because it was raining.'
+      ]},
+      { word: 'lend', definition: 'to give something to someone for a short time', examples: [
+        'Can you lend me your ruler?',
+        'I lent my notes to Tom.',
+        'My mom lent me her phone for the trip.',
+        'He refused to lend his car to anyone.',
+        'I’ll lend you some money until payday.'
+      ]},
+      { word: 'choose', definition: 'to pick one thing from several', examples: [
+        'She chose the red shirt instead of the blue one.',
+        'You can choose any seat you like.',
+        'It’s hard to choose between pizza and pasta.',
+        'We chose a movie to watch together.',
+        'He chose to study abroad.'
+      ]},
+      { word: 'prepare', definition: 'to get ready', examples: [
+        'She prepared breakfast before everyone woke up.',
+        'We need to prepare for the exam.',
+        'He prepared his clothes for tomorrow.',
+        'The chef prepared the ingredients carefully.',
+        'They prepared for the storm by closing all windows.'
+      ]},
+      { word: 'decide', definition: 'to make a choice', examples: [
+        'I can’t decide what to eat.',
+        'She decided to go jogging instead of staying home.',
+        'They decided to move to a new city.',
+        'He finally decided to buy the car.',
+        'We decided that today is cleaning day.'
+      ]},
+      { word: 'carry', definition: 'to hold and take something with you', examples: [
+        'She carried a heavy bag up the stairs.',
+        'He carried his lunch box to school.',
+        'The baby was carried by his father.',
+        'Please carry these boxes to the car.',
+        'The waiter carried a tray full of glasses.'
+      ]},
+      { word: 'check', definition: 'to look at something carefully', examples: [
+        'Please check your homework before handing it in.',
+        'I need to check my email.',
+        'She checked if the door was locked.',
+        'We checked the weather before leaving.',
+        'He checked his wallet to see if he had enough money.'
+      ]},
+      { word: 'wash', definition: 'to clean with water', examples: [
+        'I need to wash my hands before dinner.',
+        'She washed her clothes in the machine.',
+        'They washed the car on Sunday.',
+        'He washed the dishes after lunch.',
+        'The rain washed the dust off the street.'
+      ]},
+      { word: 'fix', definition: 'to repair something', examples: [
+        'My dad fixed the broken chair.',
+        'The mechanic fixed the car engine.',
+        'I need to fix my phone screen.',
+        'She fixed her hair in front of the mirror.',
+        'The plumber fixed the leak in the kitchen.'
+      ]},
+      { word: 'fill', definition: 'to make something full', examples: [
+        'Please fill the glass with water.',
+        'He filled the box with toys.',
+        'She filled the form before sending it.',
+        'The room filled with smoke.',
+        'The bus filled with passengers quickly.'
+      ]},
+      { word: 'empty', definition: 'to remove everything from inside', examples: [
+        'Please empty the trash can.',
+        'The bottle is empty—there’s no juice left.',
+        'He emptied his backpack on the table.',
+        'The streets were empty early in the morning.',
+        'The cup was empty after she drank it.'
+      ]},
+      { word: 'bring', definition: 'to take something with you', examples: [
+        'Don’t forget to bring your book to class.',
+        'She brought her dog to the park.',
+        'He brought snacks for everyone.',
+        'Please bring an umbrella in case it rains.',
+        'They brought gifts to the party.'
+      ]},
+      { word: 'hurry', definition: 'to move quickly', examples: [
+        'We have to hurry or we’ll miss the train.',
+        'She hurried to the bus stop.',
+        'Don’t hurry—take your time.',
+        'He hurried home before the rain started.',
+        'They hurried to finish before the deadline.'
+      ]},
+      { word: 'late', definition: 'not on time', examples: [
+        'I was late for class because of traffic.',
+        'Don’t be late again tomorrow.',
+        'The train was late today.',
+        'She stayed up late watching TV.',
+        'He apologized for being late.'
+      ]},
+      { word: 'clean', definition: 'to make something not dirty', examples: [
+        'Please clean your room.',
+        'She cleaned the table after dinner.',
+        'I like to clean on weekends.',
+        'The air feels clean after the rain.',
+        'He cleaned his shoes before going out.'
+      ]},
+      { word: 'dirty', definition: 'not clean', examples: [
+        'His hands are dirty from painting.',
+        'Don’t wear that dirty shirt.',
+        'The floor looks dirty—let’s mop it.',
+        'The river was dirty after the storm.',
+        'She washed the dirty dishes.'
+      ]},
+      { word: 'save', definition: 'to keep something for later', examples: [
+        'She saved some money to buy a bike.',
+        'I saved half of my lunch for later.',
+        'He saved the document before closing it.',
+        'They saved the cat from the tree.',
+        'We need to save water during summer.'
+      ]},
+      { word: 'spend', definition: 'to use money or time', examples: [
+        'She spent $10 on snacks.',
+        'He spent the weekend at home.',
+        'Don’t spend too much on clothes.',
+        'We spent hours playing games.',
+        'They spent the evening watching movies.'
+      ]},
+      { word: 'taste', definition: 'the flavor of something', examples: [
+        'This soup tastes salty.',
+        'Can you taste the lemon in this cake?',
+        'The drink tasted strange.',
+        'He tasted the sauce before serving.',
+        'It tastes better when it’s cold.'
+      ]},
+      { word: 'share', definition: 'to give part of something to others', examples: [
+        'Let’s share the pizza.',
+        'She shared her umbrella with me.',
+        'They shared stories around the fire.',
+        'Please share your notes with your classmate.',
+        'He shared a photo online.'
+      ]},
+      { word: 'wake up', definition: 'to stop sleeping', examples: [
+        'I wake up at 7 every morning.',
+        'She woke up late today.',
+        'The baby woke up crying.',
+        'Please wake up your brother for breakfast.',
+        'I can’t wake up without coffee.'
+      ]},
+      { word: 'sleepy', definition: 'feeling like you want to sleep', examples: [
+        'I feel sleepy after lunch.',
+        'The movie was so slow that I got sleepy.',
+        'He’s sleepy because he stayed up late.',
+        'She rubbed her eyes, looking sleepy.',
+        'The cat looked sleepy on the couch.'
+      ]},
+      { word: 'hungry', definition: 'wanting to eat', examples: [
+        'I’m hungry—let’s get lunch.',
+        'The kids were hungry after school.',
+        'She felt hungry even after dinner.',
+        'He’s always hungry in the morning.',
+        'They gave food to the hungry dog.'
+      ]},
+      { word: 'thirsty', definition: 'wanting to drink', examples: [
+        'I’m thirsty—can I have some water?',
+        'He felt thirsty after running.',
+        'The plants are thirsty; water them!',
+        'She was so thirsty she finished the bottle in one go.',
+        'We were thirsty after hiking.'
+      ]},
+      { word: 'change', definition: 'to make something different', examples: [
+        'I need to change my clothes.',
+        'The weather changed suddenly.',
+        'She changed her hairstyle.',
+        'He wants to change jobs.',
+        'They changed the plan last minute.'
+      ]},
+      { word: 'hold', definition: 'to have something in your hands', examples: [
+        'She held the baby carefully.',
+        'Please hold my bag for a second.',
+        'He held the door open.',
+        'They held hands while walking.',
+        'The box was too heavy to hold long.'
+      ]},
+      { word: 'move', definition: 'to go from one place to another', examples: [
+        'He moved to a new city.',
+        'Please move your chair closer.',
+        'The dog moved quickly.',
+        'They moved the table to the corner.',
+        'Don’t move until I say go.'
+      ]},
+      { word: 'travel', definition: 'to go to another place', examples: [
+        'She loves to travel around the world.',
+        'They traveled by train.',
+        'We traveled to Japan last summer.',
+        'He travels for work often.',
+        'I want to travel to the mountains.'
+      ]},
+      { word: 'plan', definition: 'to decide what to do', examples: [
+        'Let’s plan a trip for next month.',
+        'She planned her day carefully.',
+        'We planned the party together.',
+        'He didn’t plan to be late.',
+        'They planned what to cook for dinner.'
+      ]},
+      { word: 'join', definition: 'to become part of something', examples: [
+        'I want to join the basketball team.',
+        'She joined the meeting online.',
+        'He joined us for lunch.',
+        'They joined the club last week.',
+        'Please join the line.'
+      ]},
+      { word: 'invite', definition: 'to ask someone to come', examples: [
+        'I’ll invite you to my birthday party.',
+        'She invited her friends to dinner.',
+        'They invited us to their wedding.',
+        'He didn’t invite anyone this time.',
+        'We were invited to the event.'
+      ]},
+      { word: 'visit', definition: 'to go somewhere for a short time', examples: [
+        'We visited our grandparents last weekend.',
+        'She loves to visit new places.',
+        'He visited me at the hospital.',
+        'They visited the museum together.',
+        'Please visit us again soon.'
+      ]},
+      { word: 'forget', definition: 'to not remember', examples: [
+        'I forgot my keys at home.',
+        'Don’t forget your homework.',
+        'She forgot his name.',
+        'He forgot to turn off the light.',
+        'They forgot about the meeting.'
+      ]},
+      { word: 'remember', definition: 'to keep something in your mind', examples: [
+        'I remember your birthday.',
+        'She can’t remember where she put her phone.',
+        'Please remember to call me.',
+        'He remembers his first day at school.',
+        'Do you remember that song?'
+      ]},
+      { word: 'listen', definition: 'to pay attention to sound', examples: [
+        'Please listen carefully to the teacher.',
+        'I listened to music while studying.',
+        'She listened to the rain.',
+        'He never listens to advice.',
+        'They listened quietly.'
+      ]},
+      { word: 'sound', definition: 'what you hear', examples: [
+        'The bell sounds loud.',
+        'What’s that sound coming from the kitchen?',
+        'The song sounds beautiful.',
+        'It sounded like thunder.',
+        'That sound scared the cat.'
+      ]},
+      { word: 'wear', definition: 'to have clothes on your body', examples: [
+        'She wore a red dress to the party.',
+        'He always wears a hat.',
+        'Don’t wear shoes inside the house.',
+        'I wore my new jacket today.',
+        'They wear uniforms at school.'
+      ]},
+      { word: 'raise', definition: 'to lift up', examples: [
+        'Please raise your hand if you know the answer.',
+        'He raised his glass for a toast.',
+        'They raised the flag.',
+        'She raised her eyebrows in surprise.',
+        'The child raised his toy sword proudly.'
+      ]},
+      { word: 'push', definition: 'to move something away from you', examples: [
+        'He pushed the door open.',
+        'Don’t push your friend!',
+        'She pushed the cart at the store.',
+        'They pushed the box under the bed.',
+        'I had to push the button twice.'
+      ]},
+      { word: 'pull', definition: 'to move something toward you', examples: [
+        'Please pull the door to open it.',
+        'He pulled the rope hard.',
+        'She pulled the chair closer.',
+        'The dog pulled on the leash.',
+        'I pulled my jacket zipper up.'
+      ]},
+      { word: 'throw', definition: 'to send something through the air', examples: [
+        'He threw the ball to his friend.',
+        'Don’t throw trash on the ground.',
+        'She threw her arms around him in joy.',
+        'They threw water balloons at each other.',
+        'I threw my keys on the table.'
+      ]},
+      { word: 'catch', definition: 'to take hold of something moving', examples: [
+        'She caught the ball easily.',
+        'He caught a cold last week.',
+        'The cat caught a mouse.',
+        'I couldn’t catch what he said.',
+        'They caught the train just in time.'
+      ]},
+      { word: 'build', definition: 'to make something by putting parts together', examples: [
+        'They built a treehouse.',
+        'He built his own computer.',
+        'The workers built a new bridge.',
+        'She built a sandcastle at the beach.',
+        'We built a fire to keep warm.'
+      ]},
+      { word: 'grow', definition: 'to get bigger or older', examples: [
+        'The plant grew quickly.',
+        'Kids grow fast these days.',
+        'His hair grew long over the summer.',
+        'They grew vegetables in the garden.',
+        'She’s growing into a kind person.'
+      ]},
+      { word: 'break', definition: 'to damage or separate into pieces', examples: [
+        'Don’t break the glass!',
+        'He broke his phone screen.',
+        'She broke the toy by accident.',
+        'The vase broke when it fell.',
+        'My heart broke when I heard the news.'
+      ]},
+      { word: 'belong', definition: 'to be owned by someone', examples: [
+        'This pen belongs to me.',
+        'The book belongs on that shelf.',
+        'Who does this bag belong to?',
+        'That cat belongs to our neighbor.',
+        'These shoes belong in the closet.'
+      ]},
+      { word: 'cover', definition: 'to put something over another thing', examples: [
+        'Please cover your mouth when you sneeze.',
+        'She covered the pot with a lid.',
+        'He covered his eyes from the light.',
+        'The blanket covered the baby.',
+        'Snow covered the ground.'
+      ]},
+      { word: 'promise', definition: 'to say you will do something', examples: [
+        'I promise to be careful.',
+        'She promised not to tell anyone.',
+        'He promised to call me.',
+        'They promised to help.',
+        'Don’t make a promise you can’t keep.'
+      ]},
+      { word: 'hope', definition: 'to want something good to happen', examples: [
+        'I hope you feel better soon.',
+        'She hopes to travel next year.',
+        'We hope for good weather.',
+        'He hoped to pass the test.',
+        'They hope everything goes well.'
+      ]}
+    ];
+
+    const ENEMY_DIRECTION_VECTORS = [
+      { q: 1, r: 0 },
+      { q: 1, r: -1 },
+      { q: 0, r: -1 },
+      { q: -1, r: 0 },
+      { q: -1, r: 1 },
+      { q: 0, r: 1 }
+    ];
+
+    const TRIANGLE_DIRECTIONS = [
+      { key: 'top', label: 'Top', vectors: [{ q: 0, r: -1 }, { q: 1, r: -1 }] },
+      { key: 'top-left', label: 'Top Left', vectors: [{ q: -1, r: 0 }, { q: 0, r: -1 }] },
+      { key: 'bottom-left', label: 'Bottom Left', vectors: [{ q: -1, r: 0 }, { q: -1, r: 1 }] },
+      { key: 'bottom', label: 'Bottom', vectors: [{ q: 0, r: 1 }, { q: -1, r: 1 }] },
+      { key: 'bottom-right', label: 'Bottom Right', vectors: [{ q: 0, r: 1 }, { q: 1, r: 0 }] },
+      { key: 'top-right', label: 'Top Right', vectors: [{ q: 1, r: 0 }, { q: 1, r: -1 }] }
+    ];
+
+    const LINE_DIRECTION_LABELS = ['E', 'NE', 'NW', 'W', 'SW', 'SE'];
+
+    const ENEMY_SPAWN_WEIGHTS = {
+      light: 3,
+      heavy: 2,
+      tank: 1
+    };
+
+    const svg = document.getElementById('mapSvg');
+    const turnCounter = document.getElementById('turnCounter');
+    const spawnCountEl = document.getElementById('spawnCount');
+    const facilityCountEl = document.getElementById('facilityCount');
+    const lightCountEl = document.getElementById('lightCount');
+    const heavyCountEl = document.getElementById('heavyCount');
+    const tankCountEl = document.getElementById('tankCount');
+    const spawnTimerEl = document.getElementById('spawnTimer');
+
+    const modeIndicator = document.getElementById('modeIndicator');
+    const controlBar = document.getElementById('controlBar');
+    const topbarToggle = document.getElementById('topbarToggle');
+    const vocabUpload = document.getElementById('vocabUpload');
+    const playBackupBtn = document.getElementById('playBackupBtn');
+    const newGameBtn = document.getElementById('newGameBtn');
+    const customGameBtn = document.getElementById('customGameBtn');
+    const fullResetBtn = document.getElementById('fullResetBtn');
+    const weaponBar = document.getElementById('weaponBar');
+    const weaponPlanOverlay = document.getElementById('weaponPlanOverlay');
+    const planNextAttackBtn = document.getElementById('planNextAttackBtn');
+    const practiceToggle = document.getElementById('practiceToggle');
+    const attackReportBtn = document.getElementById('attackReportBtn');
+    const targetingOverlay = document.getElementById('targetingOverlay');
+    const targetingInstruction = document.getElementById('targetingInstruction');
+    const confirmTargetBtn = document.getElementById('confirmTargetBtn');
+    const reselectTargetBtn = document.getElementById('reselectTargetBtn');
+    const cancelTargetBtn = document.getElementById('cancelTargetBtn');
+
+    const cells = new Map();
+    const state = {
+      turn: 0,
+      spawnPoints: [],
+      enemies: [],
+      facilities: [],
+      enemyCounts: { light: 0, heavy: 0, tank: 0 },
+      spawnCounter: 0,
+      spreadCounter: 0,
+      nextSpawnId: 1,
+      nextEnemyId: 1,
+      nextFacilityId: 1
+    };
+
+    const commandState = {
+      practiceMode: 'spelling',
+      vocabulary: [],
+      progress: new Map(),
+      weaponCooldowns: new Map(),
+      selectedWeapon: null,
+      pendingSelection: null
+    };
+
+    const targetingState = {
+      active: false,
+      weaponKey: null,
+      vocabId: null,
+      phase: 0,
+      startCell: null,
+      phaseTwoCell: null,
+      phaseTwoVector: null,
+      selectionCells: [],
+      direction: null,
+      incorrectPenalty: 0,
+      previewCells: [],
+      directionOptions: [],
+      directionCellMap: new Map(),
+      awaitingVocabulary: false
+    };
+
+    let activeModal = null;
+    let lastStrikeCells = [];
+    let lastAttackSummary = null;
+    let awaitingNextPlan = false;
+
+    recalculateSpawnCap();
+
+    function clampValue(value, min, max) {
+      return Math.min(max, Math.max(min, value));
+    }
+
+    function recalculateSpawnCap() {
+      CAP_SPAWN_POINTS = Math.max(DEFAULT_CAP_SPAWN_POINTS, gameSettings.initialSpawns);
+    }
+
+    function applyGameSettings(settings = {}, options = {}) {
+      const { rebuildGrid = true } = options;
+      if (typeof settings.hexSide === 'number') {
+        gameSettings.hexSide = clampValue(Math.round(settings.hexSide), 5, 10);
+      }
+      if (typeof settings.initialSpawns === 'number') {
+        gameSettings.initialSpawns = clampValue(Math.round(settings.initialSpawns), 1, 10);
+      }
+      if (typeof settings.initialFacilities === 'number') {
+        gameSettings.initialFacilities = clampValue(Math.round(settings.initialFacilities), 0, 10);
+      }
+      if (settings.initialEnemyConfig) {
+        const config = settings.initialEnemyConfig;
+        gameSettings.initialEnemyConfig = {
+          light: clampValue(Math.round(config.light ?? gameSettings.initialEnemyConfig.light), 0, 6),
+          heavy: clampValue(Math.round(config.heavy ?? gameSettings.initialEnemyConfig.heavy), 0, 6),
+          tank: clampValue(Math.round(config.tank ?? gameSettings.initialEnemyConfig.tank), 0, 6)
+        };
+      }
+      if (typeof settings.spawnInterval === 'number') {
+        gameSettings.spawnInterval = clampValue(Math.round(settings.spawnInterval), 3, 10);
+      }
+      if (typeof settings.spreadInterval === 'number') {
+        gameSettings.spreadInterval = clampValue(Math.round(settings.spreadInterval), 1, 5);
+      }
+
+      const capOverride = typeof settings.capSpawnPoints === 'number'
+        ? clampValue(Math.round(settings.capSpawnPoints), 1, 10)
+        : null;
+
+      recalculateSpawnCap();
+
+      if (capOverride !== null) {
+        CAP_SPAWN_POINTS = Math.max(DEFAULT_CAP_SPAWN_POINTS, gameSettings.initialSpawns, capOverride);
+      }
+
+      if (rebuildGrid) {
+        buildGrid();
+      }
+    }
+
+    function axialKey(q, r) {
+      return `${q},${r}`;
+    }
+
+    function hexDistance(a, b) {
+      const dq = a.q - b.q;
+      const dr = a.r - b.r;
+      const ds = (-a.q - a.r) - (-b.q - b.r);
+      return Math.max(Math.abs(dq), Math.abs(dr), Math.abs(ds));
+    }
+
+    function getNeighbors(q, r) {
+      return ENEMY_DIRECTION_VECTORS.map(({ q: dq, r: dr }) => ({ q: q + dq, r: r + dr }));
+    }
+
+    function getCell(q, r) {
+      return cells.get(axialKey(q, r));
+    }
+
+    function cellAvailable(q, r) {
+      const cell = getCell(q, r);
+      return cell && !cell.occupant;
+    }
+
+    function randomItem(array) {
+      return array[Math.floor(Math.random() * array.length)];
+    }
+
+    function shuffleArray(array) {
+      const copy = [...array];
+      for (let i = copy.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [copy[i], copy[j]] = [copy[j], copy[i]];
+      }
+      return copy;
+    }
+
+    function getHexRadius() {
+      return Math.max(1, gameSettings.hexSide - 1);
+    }
+
+    function buildGrid() {
+      const hexSize = Number(getComputedStyle(document.documentElement).getPropertyValue('--hex-size')) || 38;
       const sqrt3 = Math.sqrt(3);
 
-      const hexCorners = (cx, cy, size) => {
-        // pointy-top hex corners (starting at angle 0 = rightmost corner)
-        const pts = [];
-        for(let i=0;i<6;i++){
-          const angle = Math.PI/180 * (60 * i - 30); // -30 for pointy-top
-          pts.push([cx + size * Math.cos(angle), cy + size * Math.sin(angle)]);
+      function axialToPixel(q, r) {
+        return {
+          x: hexSize * sqrt3 * (q + r / 2),
+          y: hexSize * 1.5 * r
+        };
+      }
+
+      function hexCorners(cx, cy) {
+        const corners = [];
+        for (let i = 0; i < 6; i++) {
+          const angle = Math.PI / 180 * (60 * i - 30);
+          corners.push([
+            cx + hexSize * Math.cos(angle),
+            cy + hexSize * Math.sin(angle)
+          ]);
         }
-        return pts;
-      };
+        return corners;
+      }
 
-      const axialToPixel = (q, r, size) => {
-        // pointy-top axial to pixel
-        const x = size * sqrt3 * (q + r/2);
-        const y = size * 3/2 * r;
-        return [x, y];
-      };
-
-      // collect hexes within radius
-      const hexes = [];
-      for(let q = -radius; q <= radius; q++){
-        for(let r = -radius; r <= radius; r++){
+      const positions = [];
+      const radius = getHexRadius();
+      for (let q = -radius; q <= radius; q++) {
+        for (let r = -radius; r <= radius; r++) {
           const s = -q - r;
-          if(Math.abs(s) <= radius){
-            hexes.push({q, r});
+          if (Math.abs(s) <= radius) {
+            positions.push({ q, r });
           }
         }
       }
 
-      // compute pixel positions and extents
-      const positions = hexes.map(h => {
-        const [x,y] = axialToPixel(h.q, h.r, hexSize);
-        return {q:h.q, r:h.r, x, y};
-      });
-
-      // determine bounding box
       let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-      positions.forEach(p => {
-        const corners = hexCorners(p.x, p.y, hexSize);
-        corners.forEach(([cx,cy]) => {
+      const enriched = positions.map(({ q, r }) => {
+        const { x, y } = axialToPixel(q, r);
+        const corners = hexCorners(x, y);
+        corners.forEach(([cx, cy]) => {
           minX = Math.min(minX, cx);
           maxX = Math.max(maxX, cx);
           minY = Math.min(minY, cy);
           maxY = Math.max(maxY, cy);
         });
+        return { q, r, x, y, corners };
       });
 
-      // add padding
-      const pad = 12;
-      minX -= pad; minY -= pad; maxX += pad; maxY += pad;
+      const padding = 16;
+      minX -= padding;
+      minY -= padding;
+      maxX += padding;
+      maxY += padding;
       const width = maxX - minX;
       const height = maxY - minY;
 
-      const svg = document.getElementById('grid');
-      svg.setAttribute('width', Math.min(width, window.innerWidth-40));
-      svg.setAttribute('height', Math.min(height, window.innerHeight-40));
       svg.setAttribute('viewBox', `${minX} ${minY} ${width} ${height}`);
       svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
+      svg.innerHTML = '';
+      cells.clear();
 
-      // render hexagons
-      positions.forEach((p, i) => {
-        const corners = hexCorners(p.x, p.y, hexSize);
-        const points = corners.map(pt => pt.join(',')).join(' ');
-        const poly = document.createElementNS('http://www.w3.org/2000/svg','polygon');
-        poly.setAttribute('points', points);
-        poly.setAttribute('class', 'hex' + ((Math.abs(p.q + p.r) % 2 === 0) ? ' alt':'')); // simple alternation
-        poly.setAttribute('data-axial', `${p.q},${p.r}`);
-        svg.appendChild(poly);
+      enriched.forEach((cell) => {
+        const polygon = document.createElementNS('http://www.w3.org/2000/svg', 'polygon');
+        const points = cell.corners.map(([cx, cy]) => `${cx},${cy}`).join(' ');
+        polygon.setAttribute('points', points);
+        polygon.setAttribute('class', 'hex');
+        polygon.dataset.axial = axialKey(cell.q, cell.r);
+        polygon.dataset.type = 'none';
 
-        const text = document.createElementNS('http://www.w3.org/2000/svg','text');
-        text.setAttribute('x', p.x);
-        text.setAttribute('y', p.y);
-        text.setAttribute('class','coord');
-        text.textContent = `${p.q},${p.r}`;
+        const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+        text.setAttribute('x', cell.x);
+        text.setAttribute('y', cell.y + 4);
+        text.setAttribute('class', 'cell-label');
+
+        const cellData = {
+          ...cell,
+          polygon,
+          label: text,
+          occupant: null
+        };
+
+        polygon.addEventListener('click', (event) => handleHexClick(event, cellData));
+        polygon.addEventListener('mouseenter', () => handleHexHover(cellData));
+        polygon.addEventListener('mouseleave', () => handleHexLeave(cellData));
+
+        svg.appendChild(polygon);
         svg.appendChild(text);
+
+        cells.set(axialKey(cell.q, cell.r), cellData);
+      });
+    }
+
+    function clearOccupants() {
+      cells.forEach((cell) => {
+        cell.occupant = null;
+        cell.polygon.dataset.type = 'none';
+        cell.label.textContent = '';
+        cell.label.removeAttribute('data-contrast');
+      });
+    }
+
+    function resetState() {
+      state.turn = 0;
+      state.spawnPoints = [];
+      state.enemies = [];
+      state.facilities = [];
+      state.enemyCounts = { light: 0, heavy: 0, tank: 0 };
+      state.spawnCounter = 0;
+      state.spreadCounter = 0;
+      state.nextSpawnId = 1;
+      state.nextEnemyId = 1;
+      state.nextFacilityId = 1;
+      clearStrikeArea();
+      clearOccupants();
+      awaitingNextPlan = false;
+      updatePlanNextAttackUI();
+      lastAttackSummary = null;
+      updateAttackReportButton();
+    }
+
+    function availableNonEdgeCells() {
+      const radius = getHexRadius();
+      return Array.from(cells.values()).filter((cell) => {
+        const distance = Math.max(Math.abs(cell.q), Math.abs(cell.r), Math.abs(-cell.q - cell.r));
+        return distance < radius && !cell.occupant;
+      });
+    }
+
+    function availableAnyCells() {
+      return Array.from(cells.values()).filter((cell) => !cell.occupant);
+    }
+
+    function selectRandomCell(candidates) {
+      if (!candidates.length) return null;
+      const index = Math.floor(Math.random() * candidates.length);
+      return candidates.splice(index, 1)[0];
+    }
+
+    function registerOccupant(cell, occupant) {
+      cell.occupant = occupant;
+      cell.polygon.dataset.type = occupant.renderType;
+      if (occupant.label) {
+        cell.label.textContent = occupant.label;
+        if (occupant.contrast === 'dark') {
+          cell.label.dataset.contrast = 'dark';
+        } else {
+          cell.label.removeAttribute('data-contrast');
+        }
+      } else {
+        cell.label.textContent = '';
+        cell.label.removeAttribute('data-contrast');
+      }
+    }
+
+    function placeSpawn(cell) {
+      const spawn = {
+        id: state.nextSpawnId++,
+        q: cell.q,
+        r: cell.r,
+        health: HEALTH_VALUES.spawn
+      };
+      state.spawnPoints.unshift(spawn);
+      registerOccupant(cell, {
+        renderType: 'spawn',
+        label: `${spawn.health}`,
+        contrast: 'dark',
+        entityType: 'spawn',
+        reference: spawn
+      });
+    }
+
+    function placeFacility(cell) {
+      const facility = {
+        id: state.nextFacilityId++,
+        q: cell.q,
+        r: cell.r,
+        health: HEALTH_VALUES.facility
+      };
+      state.facilities.push(facility);
+      registerOccupant(cell, {
+        renderType: 'facility',
+        label: `${facility.health}`,
+        contrast: 'light',
+        entityType: 'facility',
+        reference: facility
+      });
+    }
+
+    function determineDirection(spawn, target) {
+      const dq = target.q - spawn.q;
+      const dr = target.r - spawn.r;
+      const distance = Math.max(Math.abs(dq), Math.abs(dr), Math.abs(-dq - dr));
+      if (distance === 0) return { q: 0, r: 0 };
+      const stepQ = Math.round(dq / distance);
+      const stepR = Math.round(dr / distance);
+      const candidate = ENEMY_DIRECTION_VECTORS.find((dir) => dir.q === stepQ && dir.r === stepR);
+      return candidate || { q: stepQ, r: stepR };
+    }
+
+    function placeEnemy(spawn, cell, type) {
+      const direction = determineDirection(spawn, cell);
+      const enemy = {
+        id: state.nextEnemyId++,
+        type,
+        q: cell.q,
+        r: cell.r,
+        health: HEALTH_VALUES[type],
+        spawnId: spawn.id,
+        direction
+      };
+      state.enemies.push(enemy);
+      state.enemyCounts[type] += 1;
+      registerOccupant(cell, {
+        renderType: `enemy-${type}`,
+        label: `${enemy.health}`,
+        contrast: type === 'light' ? 'dark' : 'light',
+        entityType: 'enemy',
+        reference: enemy
+      });
+    }
+
+    function spawnEnemiesAround(spawn, config) {
+      const baseCell = getCell(spawn.q, spawn.r);
+      if (!baseCell) return;
+      const neighbors = getNeighbors(spawn.q, spawn.r)
+        .map(({ q, r }) => getCell(q, r))
+        .filter(Boolean);
+      const openNeighbors = neighbors.filter((cell) => !cell.occupant);
+      if (!openNeighbors.length) return;
+
+      const types = Object.keys(config);
+      types.forEach((type) => {
+        const count = config[type];
+        for (let i = 0; i < count; i++) {
+          if (state.enemyCounts[type] >= CAP_ENEMY[type]) continue;
+          const available = neighbors.filter((cell) => cell && !cell.occupant);
+          if (!available.length) return;
+          const selected = available[Math.floor(Math.random() * available.length)];
+          placeEnemy(spawn, selected, type);
+        }
+      });
+    }
+
+    function initializeObjects() {
+      const spawnCandidates = availableNonEdgeCells();
+      const selectedSpawns = [];
+      for (let i = 0; i < gameSettings.initialSpawns; i++) {
+        if (!spawnCandidates.length || state.spawnPoints.length >= CAP_SPAWN_POINTS) break;
+        const cell = selectRandomCell(spawnCandidates);
+        if (!cell) break;
+        placeSpawn(cell);
+        selectedSpawns.push(cell);
+      }
+
+      state.spawnPoints.forEach((spawn) => {
+        if (state.enemyCounts.light >= CAP_ENEMY.light && state.enemyCounts.heavy >= CAP_ENEMY.heavy && state.enemyCounts.tank >= CAP_ENEMY.tank) {
+          return;
+        }
+        spawnEnemiesAround(spawn, gameSettings.initialEnemyConfig);
       });
 
-    })();
+      const facilityCandidates = availableAnyCells();
+      for (let i = 0; i < gameSettings.initialFacilities; i++) {
+        if (!facilityCandidates.length) break;
+        const cell = selectRandomCell(facilityCandidates);
+        if (!cell) break;
+        placeFacility(cell);
+      }
+    }
+
+    function refreshCounts() {
+      turnCounter.textContent = state.turn;
+      spawnCountEl.textContent = state.spawnPoints.length;
+      facilityCountEl.textContent = state.facilities.length;
+      lightCountEl.textContent = state.enemyCounts.light;
+      heavyCountEl.textContent = state.enemyCounts.heavy;
+      tankCountEl.textContent = state.enemyCounts.tank;
+
+      const spawnInterval = Math.max(1, gameSettings.spawnInterval);
+      const remainder = state.turn % spawnInterval;
+      const turnsUntilSpawn = remainder === 0 ? spawnInterval : spawnInterval - remainder;
+      spawnTimerEl.textContent = turnsUntilSpawn;
+    }
+
+    function getSpawnById(id) {
+      return state.spawnPoints.find((spawn) => spawn.id === id);
+    }
+
+    function attemptEnemySpread() {
+      const occupiedSnapshot = new Map();
+      cells.forEach((cell, key) => {
+        occupiedSnapshot.set(key, cell.occupant);
+      });
+
+      const updates = [];
+
+      state.enemies.forEach((enemy) => {
+        const spawn = getSpawnById(enemy.spawnId);
+        if (!spawn) return;
+        const direction = enemy.direction;
+        const targetKey = axialKey(enemy.q + direction.q, enemy.r + direction.r);
+        const targetCell = cells.get(targetKey);
+        if (!targetCell) return;
+        if (occupiedSnapshot.get(targetKey)) return;
+
+        const currentCell = cells.get(axialKey(enemy.q, enemy.r));
+        if (!currentCell) return;
+
+        occupiedSnapshot.set(targetKey, { ...currentCell.occupant });
+        occupiedSnapshot.set(axialKey(enemy.q, enemy.r), null);
+        updates.push({ enemy, currentCell, targetCell });
+      });
+
+      updates.forEach(({ enemy, currentCell, targetCell }) => {
+        currentCell.occupant = null;
+        currentCell.polygon.dataset.type = 'none';
+        currentCell.label.textContent = '';
+        currentCell.label.removeAttribute('data-contrast');
+
+        enemy.q = targetCell.q;
+        enemy.r = targetCell.r;
+
+        registerOccupant(targetCell, {
+          renderType: `enemy-${enemy.type}`,
+          label: `${enemy.health}`,
+          contrast: enemy.type === 'light' ? 'dark' : 'light',
+          entityType: 'enemy',
+          reference: enemy
+        });
+      });
+    }
+
+    function buildSpawnWeightPool() {
+      const entries = [];
+      Object.entries(ENEMY_SPAWN_WEIGHTS).forEach(([type, weight]) => {
+        if (state.enemyCounts[type] >= CAP_ENEMY[type]) return;
+        for (let i = 0; i < weight; i++) {
+          entries.push(type);
+        }
+      });
+      return entries;
+    }
+
+    function spawnEnemyWave() {
+      const spawnPointsOrdered = [...state.spawnPoints];
+      spawnPointsOrdered.sort((a, b) => b.id - a.id); // newest first
+
+      spawnPointsOrdered.forEach((spawn) => {
+        const pool = buildSpawnWeightPool();
+        if (!pool.length) return;
+        const type = randomItem(pool);
+        const neighbors = getNeighbors(spawn.q, spawn.r)
+          .map(({ q, r }) => getCell(q, r))
+          .filter((cell) => cell && !cell.occupant);
+        if (!neighbors.length) return;
+        const selected = randomItem(neighbors);
+        placeEnemy(spawn, selected, type);
+      });
+    }
+
+    function formatHealth(value) {
+      if (Number.isInteger(value)) return `${value}`;
+      return value.toFixed(1).replace(/\.0$/, '');
+    }
+
+    function clearCell(cell) {
+      if (!cell) return;
+      cell.occupant = null;
+      cell.polygon.dataset.type = 'none';
+      cell.polygon.removeAttribute('data-preview');
+      cell.polygon.removeAttribute('data-selected');
+      cell.polygon.removeAttribute('data-option');
+      cell.label.textContent = '';
+      cell.label.removeAttribute('data-contrast');
+    }
+
+    function removeSpawn(spawn) {
+      const index = state.spawnPoints.findIndex((s) => s.id === spawn.id);
+      if (index !== -1) {
+        state.spawnPoints.splice(index, 1);
+      }
+      const cell = getCell(spawn.q, spawn.r);
+      clearCell(cell);
+    }
+
+    function removeFacility(facility) {
+      const index = state.facilities.findIndex((f) => f.id === facility.id);
+      if (index !== -1) {
+        state.facilities.splice(index, 1);
+      }
+      const cell = getCell(facility.q, facility.r);
+      clearCell(cell);
+    }
+
+    function removeEnemy(enemy) {
+      const index = state.enemies.findIndex((e) => e.id === enemy.id);
+      if (index !== -1) {
+        state.enemies.splice(index, 1);
+      }
+      state.enemyCounts[enemy.type] = Math.max(0, state.enemyCounts[enemy.type] - 1);
+      const cell = getCell(enemy.q, enemy.r);
+      clearCell(cell);
+    }
+
+    function applyDamageToCell(cell, damage) {
+      if (!cell || !cell.occupant || !cell.occupant.reference) return;
+      const occupant = cell.occupant;
+      const entity = occupant.reference;
+      entity.health = Math.max(0, entity.health - damage);
+
+      if (entity.health <= 0) {
+        if (occupant.entityType === 'enemy') {
+          removeEnemy(entity);
+        } else if (occupant.entityType === 'spawn') {
+          removeSpawn(entity);
+        } else if (occupant.entityType === 'facility') {
+          removeFacility(entity);
+        }
+      } else {
+        registerOccupant(cell, {
+          renderType: occupant.renderType,
+          label: formatHealth(entity.health),
+          contrast: occupant.contrast,
+          entityType: occupant.entityType,
+          reference: entity
+        });
+      }
+    }
+
+    function applyDamageToCells(cellList, damage) {
+      cellList.forEach((cell) => applyDamageToCell(cell, damage));
+      refreshCounts();
+    }
+
+    function getLineCells(startCell, direction, length) {
+      const cellsInLine = [startCell];
+      let current = startCell;
+      for (let i = 1; i < length; i++) {
+        const next = getCell(current.q + direction.q, current.r + direction.r);
+        if (!next) {
+          return [];
+        }
+        cellsInLine.push(next);
+        current = next;
+      }
+      return cellsInLine;
+    }
+
+    function getHexAreaCells(centerCell) {
+      const neighbors = getNeighbors(centerCell.q, centerCell.r)
+        .map(({ q, r }) => getCell(q, r))
+        .filter(Boolean);
+      return [centerCell, ...neighbors];
+    }
+
+    function getTriangleCells(startCell, directionOption) {
+      const option = TRIANGLE_DIRECTIONS.find((dir) => dir.key === directionOption);
+      if (!option) return [];
+      const cells = [startCell];
+      for (const vector of option.vectors) {
+        const target = getCell(startCell.q + vector.q, startCell.r + vector.r);
+        if (!target) {
+          return [];
+        }
+        cells.push(target);
+      }
+      return cells;
+    }
+
+    function computeWeaponCells(startCell, weaponKey, directionOption) {
+      const weapon = WEAPON_CONFIGS.find((w) => w.key === weaponKey);
+      if (!weapon || !startCell) return [];
+      if (weapon.pattern === 'single') {
+        return [startCell];
+      }
+      if (weapon.pattern === 'hex7') {
+        return getHexAreaCells(startCell);
+      }
+      if (weapon.pattern === 'line3' || weapon.pattern === 'line5') {
+        if (!directionOption) return [];
+        const length = weapon.pattern === 'line3' ? 3 : 5;
+        return getLineCells(startCell, directionOption, length);
+      }
+      if (weapon.pattern === 'triangle3') {
+        if (!directionOption) return [];
+        return getTriangleCells(startCell, directionOption.key || directionOption);
+      }
+      return [];
+    }
+
+    function displaceCellRandomly(cell, steps) {
+      let current = cell;
+      for (let i = 0; i < steps; i++) {
+        const neighbors = getNeighbors(current.q, current.r)
+          .map(({ q, r }) => getCell(q, r))
+          .filter(Boolean);
+        if (!neighbors.length) break;
+        current = randomItem(neighbors);
+      }
+      return current;
+    }
+
+    function clearPreviewCells() {
+      targetingState.previewCells.forEach((cell) => {
+        cell.polygon.removeAttribute('data-preview');
+      });
+      targetingState.previewCells = [];
+    }
+
+    function clearSelectedCells() {
+      targetingState.selectionCells.forEach((cell) => {
+        cell.polygon.removeAttribute('data-selected');
+      });
+      targetingState.selectionCells = [];
+    }
+
+    function clearStrikeArea() {
+      if (!lastStrikeCells.length) return;
+      lastStrikeCells.forEach((cell) => {
+        if (cell && cell.polygon) {
+          cell.polygon.removeAttribute('data-strike');
+        }
+      });
+      lastStrikeCells = [];
+    }
+
+    function markStrikeArea(cells) {
+      clearStrikeArea();
+      lastStrikeCells = cells.filter(Boolean);
+      lastStrikeCells.forEach((cell) => {
+        if (cell && cell.polygon) {
+          cell.polygon.dataset.strike = 'true';
+        }
+      });
+    }
+
+    function setPreviewCells(cells) {
+      clearPreviewCells();
+      targetingState.previewCells = cells;
+      cells.forEach((cell) => {
+        cell.polygon.dataset.preview = 'true';
+      });
+    }
+
+    function setSelectedCells(cells) {
+      clearSelectedCells();
+      targetingState.selectionCells = cells;
+      cells.forEach((cell) => {
+        cell.polygon.dataset.selected = 'true';
+      });
+    }
+
+    function clearDirectionOptions() {
+      targetingState.directionOptions.forEach((option) => {
+        const highlightCells = option.__highlightCells || option.cells || [];
+        highlightCells.forEach((cell) => {
+          cell.polygon.removeAttribute('data-option');
+        });
+        if (option.clickCell) {
+          option.clickCell.polygon.removeAttribute('data-end-option');
+        }
+        option.__highlightCells = undefined;
+      });
+      targetingState.directionOptions = [];
+      targetingState.directionCellMap = new Map();
+    }
+
+    function highlightDirectionOptions(options) {
+      clearDirectionOptions();
+      targetingState.directionOptions = options;
+      targetingState.directionCellMap = new Map();
+      options.forEach((option) => {
+        const highlightCells = option.highlightCells || option.cells || [];
+        option.__highlightCells = highlightCells;
+        highlightCells.forEach((cell) => {
+          cell.polygon.dataset.option = 'true';
+        });
+        if (option.clickCell) {
+          option.clickCell.polygon.dataset.endOption = option.key;
+          targetingState.directionCellMap.set(axialKey(option.clickCell.q, option.clickCell.r), option);
+        }
+      });
+    }
+
+    function buildLineDirectionOptions(startCell, weapon) {
+      const length = weapon.pattern === 'line3' ? 3 : 5;
+      const options = [];
+      ENEMY_DIRECTION_VECTORS.forEach((vector, index) => {
+        const cells = getLineCells(startCell, vector, length);
+        if (cells.length !== length) return;
+        options.push({
+          key: `${weapon.key}-dir-${index}`,
+          label: LINE_DIRECTION_LABELS[index] || `Dir ${index + 1}`,
+          cells,
+          vector,
+          clickCell: cells[cells.length - 1]
+        });
+      });
+      return options;
+    }
+
+    function buildTriangleDirectionOptions(startCell) {
+      const options = [];
+      TRIANGLE_DIRECTIONS.forEach((direction) => {
+        const cells = getTriangleCells(startCell, direction.key);
+        if (cells.length !== 3) return;
+        options.push({
+          key: `triangle-${direction.key}`,
+          label: direction.label,
+          cells,
+          direction,
+          clickCell: cells[cells.length - 1]
+        });
+      });
+      return options;
+    }
+
+    function buildThreePhaseAdjacentOptions(centerCell) {
+      if (!centerCell) return [];
+      const options = [];
+      getNeighbors(centerCell.q, centerCell.r)
+        .map(({ q, r }) => getCell(q, r))
+        .filter(Boolean)
+        .forEach((neighbor) => {
+          options.push({
+            key: `phase2-${neighbor.q}-${neighbor.r}`,
+            cells: [neighbor],
+            selectionCells: [neighbor],
+            previewCells: [neighbor],
+            highlightCells: [neighbor],
+            clickCell: neighbor,
+            targetCell: neighbor
+          });
+        });
+      return options;
+    }
+
+    function buildThreePhaseExtensionOptions(centerCell, secondCell) {
+      if (!centerCell || !secondCell) return [];
+      const options = [];
+      const centerNeighborKeys = new Set(
+        getNeighbors(centerCell.q, centerCell.r).map(({ q, r }) => axialKey(q, r))
+      );
+      const primaryVector = {
+        q: secondCell.q - centerCell.q,
+        r: secondCell.r - centerCell.r
+      };
+      getNeighbors(secondCell.q, secondCell.r).forEach(({ q, r }) => {
+        const key = axialKey(q, r);
+        if (!centerNeighborKeys.has(key)) return;
+        if (key === axialKey(centerCell.q, centerCell.r)) return;
+        const candidate = getCell(q, r);
+        if (!candidate) return;
+        const secondaryVector = {
+          q: candidate.q - centerCell.q,
+          r: candidate.r - centerCell.r
+        };
+        options.push({
+          key: `phase3-${candidate.q}-${candidate.r}`,
+          cells: [centerCell, secondCell, candidate],
+          selectionCells: [candidate],
+          previewCells: [candidate],
+          highlightCells: [candidate],
+          clickCell: candidate,
+          targetCell: candidate,
+          vectorsFromCenter: [
+            { q: primaryVector.q, r: primaryVector.r },
+            secondaryVector
+          ]
+        });
+      });
+      return options;
+    }
+
+    function updateTargetingOverlay(options = {}) {
+      if (!targetingOverlay) return;
+      if (options.visible === false) {
+        targetingOverlay.classList.remove('visible');
+        return;
+      }
+      targetingOverlay.classList.add('visible');
+      if (options.instruction) {
+        targetingInstruction.textContent = options.instruction;
+      }
+      if (options.showConfirm != null) {
+        confirmTargetBtn.style.display = options.showConfirm ? 'inline-flex' : 'none';
+      }
+      if (options.showReselect != null) {
+        reselectTargetBtn.style.display = options.showReselect ? 'inline-flex' : 'none';
+      }
+      if (options.showCancel != null) {
+        cancelTargetBtn.style.display = options.showCancel ? 'inline-flex' : 'none';
+      }
+      if (options.confirmDisabled != null) {
+        confirmTargetBtn.disabled = options.confirmDisabled;
+      }
+    }
+
+    function closeModal(reason) {
+      if (!activeModal) return;
+      document.removeEventListener('keydown', activeModal.keyListener);
+      const { backdrop, onClose } = activeModal;
+      backdrop.remove();
+      activeModal = null;
+      if (typeof onClose === 'function') {
+        onClose(reason);
+      }
+    }
+
+    function openModal(buildContent, options = {}) {
+      closeModal();
+      const backdrop = document.createElement('div');
+      backdrop.className = 'modal-backdrop';
+      const content = document.createElement('div');
+      content.className = 'modal-content';
+      backdrop.appendChild(content);
+
+      const close = (reason) => closeModal(reason);
+
+      const keyListener = (event) => {
+        if (event.key === 'Escape') {
+          close('escape');
+        }
+      };
+
+      backdrop.addEventListener('click', (event) => {
+        if (event.target === backdrop) {
+          close('backdrop');
+        }
+      });
+
+      document.body.appendChild(backdrop);
+      document.addEventListener('keydown', keyListener);
+
+      activeModal = { backdrop, content, keyListener, onClose: options.onClose || null };
+
+      buildContent(content, close);
+      return activeModal;
+    }
+
+    function showMessageModal(title, message) {
+      openModal((container, close) => {
+        const heading = document.createElement('h2');
+        heading.textContent = title;
+        const paragraph = document.createElement('p');
+        paragraph.textContent = message;
+        const actions = document.createElement('div');
+        actions.className = 'modal-actions';
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.textContent = 'Close';
+        closeBtn.addEventListener('click', () => close());
+        actions.appendChild(closeBtn);
+        container.appendChild(heading);
+        container.appendChild(paragraph);
+        container.appendChild(actions);
+      });
+    }
+
+    function openAttackSummaryModal({ entry, weapon, baseDamage, totalDamage, penalty, originalStart, actualStart, wasCorrect, roundsRemaining = 0 }) {
+      const formatCell = (cell) => {
+        if (!cell) return 'N/A';
+        return `(${cell.q}, ${cell.r})`;
+      };
+      const drifted = Boolean(originalStart && actualStart && (originalStart.q !== actualStart.q || originalStart.r !== actualStart.r));
+
+      openModal((container, close) => {
+        const heading = document.createElement('h2');
+        heading.textContent = 'Attack Report';
+
+        const description = document.createElement('p');
+        if (wasCorrect) {
+          description.textContent = 'Direct strike confirmed. Vocabulary cleared from the roster.';
+        } else {
+          description.textContent = 'Strike deviated due to inaccuracies. Vocabulary will rearm after lockout expires.';
+        }
+
+        const summary = document.createElement('div');
+        summary.className = 'attack-summary';
+
+        const addRow = (label, value) => {
+          const row = document.createElement('div');
+          row.className = 'attack-summary-row';
+          const labelSpan = document.createElement('span');
+          labelSpan.className = 'label';
+          labelSpan.textContent = label;
+          const valueSpan = document.createElement('span');
+          valueSpan.className = 'value';
+          valueSpan.textContent = value;
+          row.appendChild(labelSpan);
+          row.appendChild(valueSpan);
+          summary.appendChild(row);
+        };
+
+        addRow('Vocabulary', entry.word);
+        addRow('Word Length', `${baseDamage}`);
+        addRow('Weapon', weapon.name);
+        addRow('Damage', `${totalDamage}`);
+        addRow('Inaccuracy', penalty === 0 ? '0 letters wrong' : `${penalty} letter${penalty === 1 ? '' : 's'} wrong`);
+        addRow('Start Cell', drifted ? `${formatCell(originalStart)} → ${formatCell(actualStart)}` : formatCell(originalStart));
+        const resultText = wasCorrect
+          ? 'Target neutralized'
+          : (roundsRemaining > 0
+              ? `Reattempt available in ${roundsRemaining} round${roundsRemaining === 1 ? '' : 's'}`
+              : 'Reattempt now available');
+        addRow('Result', resultText);
+
+        const actions = document.createElement('div');
+        actions.className = 'modal-actions';
+
+        const closeBtn = document.createElement('button');
+        closeBtn.type = 'button';
+        closeBtn.textContent = 'Close';
+        closeBtn.classList.add('primary');
+        closeBtn.addEventListener('click', () => close('close'));
+
+        actions.appendChild(closeBtn);
+
+        container.appendChild(heading);
+        container.appendChild(description);
+        container.appendChild(summary);
+        container.appendChild(actions);
+      });
+    }
+
+    function updateAttackReportButton(markUnread = false) {
+      if (!attackReportBtn) return;
+      if (lastAttackSummary) {
+        attackReportBtn.classList.add('visible');
+        if (markUnread) {
+          attackReportBtn.classList.add('unread');
+        }
+        attackReportBtn.disabled = false;
+      } else {
+        attackReportBtn.classList.remove('visible');
+        attackReportBtn.classList.remove('unread');
+        attackReportBtn.disabled = true;
+      }
+    }
+
+    function storeAttackSummary(summary) {
+      lastAttackSummary = summary;
+      updateAttackReportButton(true);
+    }
+
+    function handlePlanNextAttack() {
+      if (!awaitingNextPlan) return;
+      clearStrikeArea();
+      awaitingNextPlan = false;
+      lastAttackSummary = null;
+      updateAttackReportButton();
+      updatePlanNextAttackUI();
+      advanceTurn();
+      saveProgress();
+    }
+
+    function sanitizeVocabularyEntry(entry) {
+      if (!entry) return null;
+      const word = (entry.word || '').toString().trim();
+      const definition = (entry.definition || entry.meaning || '').toString().trim();
+      let examples = entry.examples;
+      if (typeof examples === 'string') {
+        examples = [examples];
+      }
+      if (!Array.isArray(examples)) {
+        examples = [];
+      }
+      examples = examples.map((example) => example.toString());
+      if (!word || !definition) return null;
+      if (!examples.length) {
+        if (entry.example) {
+          examples = [entry.example.toString()];
+        } else {
+          examples = ['No example provided.'];
+        }
+      }
+      return { word, definition, examples };
+    }
+
+    function sampleBackupWords(count, excludeSet = new Set()) {
+      const pool = BACKUP_VOCAB.filter((item) => !excludeSet.has(item.word.toLowerCase()));
+      const selections = [];
+      const available = [...pool];
+      while (selections.length < count && available.length) {
+        const index = Math.floor(Math.random() * available.length);
+        selections.push(available.splice(index, 1)[0]);
+      }
+      return selections;
+    }
+
+    function prepareVocabularyList(rawList) {
+      const sanitized = [];
+      const seen = new Set();
+      rawList.forEach((entry) => {
+        const item = sanitizeVocabularyEntry(entry);
+        if (!item) return;
+        const key = item.word.toLowerCase();
+        if (seen.has(key)) return;
+        seen.add(key);
+        sanitized.push(item);
+      });
+
+      if (sanitized.length < DEFAULT_VOCAB_REQUIRED) {
+        const needed = DEFAULT_VOCAB_REQUIRED - sanitized.length;
+        const fillers = sampleBackupWords(needed, seen);
+        fillers.forEach((item) => {
+          const key = item.word.toLowerCase();
+          if (seen.has(key)) return;
+          seen.add(key);
+          sanitized.push(item);
+        });
+      }
+
+      return sanitized;
+    }
+
+    function updatePracticeToggle() {
+      if (!practiceToggle) return;
+      if (commandState.practiceMode === 'spelling') {
+        practiceToggle.textContent = 'Switch to Meaning Practice';
+      } else {
+        practiceToggle.textContent = 'Switch to Spelling Practice';
+      }
+    }
+
+    function updatePracticeToggleVisibility() {
+      if (!practiceToggle) return;
+      const shouldShow = commandState.vocabulary.length > 0;
+      if (shouldShow) {
+        practiceToggle.classList.add('visible');
+      } else {
+        practiceToggle.classList.remove('visible');
+      }
+    }
+
+    function updateModeIndicator() {
+      if (!modeIndicator) return;
+      if (!commandState.vocabulary.length) {
+        modeIndicator.textContent = 'Load vocabulary to begin';
+      } else {
+        const label = commandState.practiceMode === 'spelling' ? 'Spelling' : 'Meaning';
+        modeIndicator.textContent = `Practice: ${label}`;
+      }
+    }
+
+    function renderWeaponBar() {
+      if (!weaponBar) return;
+      weaponBar.innerHTML = '';
+      const hasVocabulary = commandState.vocabulary.length > 0;
+      const targetingLocked = targetingState.active || targetingState.awaitingVocabulary || awaitingNextPlan;
+      WEAPON_CONFIGS.forEach((weapon) => {
+        const cooldown = commandState.weaponCooldowns.get(weapon.key) || 0;
+        const card = document.createElement('button');
+        card.type = 'button';
+        card.className = 'weapon-card';
+        card.dataset.weapon = weapon.key;
+        if (commandState.selectedWeapon === weapon.key) {
+          card.classList.add('active');
+        }
+        const isDisabled = cooldown > 0 || !hasVocabulary || targetingLocked;
+        if (cooldown > 0) {
+          card.classList.add('cooldown');
+        }
+        if (!hasVocabulary || targetingLocked) {
+          card.classList.add('disabled');
+        }
+        card.disabled = isDisabled;
+        let statusText = 'Ready';
+        if (!hasVocabulary) {
+          statusText = 'Load vocabulary';
+        } else if (awaitingNextPlan) {
+          statusText = 'Awaiting plan confirmation';
+        } else if (targetingState.awaitingVocabulary) {
+          statusText = 'Select vocabulary';
+        } else if (targetingState.active) {
+          statusText = 'Targeting in progress';
+        } else if (cooldown > 0) {
+          statusText = `${cooldown} turn${cooldown === 1 ? '' : 's'} remaining`;
+        }
+        card.innerHTML = `
+          <h3>${weapon.name}</h3>
+          <div class="weapon-stats">
+            <span>${weapon.description}</span>
+            <span>Damage x${weapon.damageMultiplier}</span>
+            <span>Status: ${statusText}</span>
+          </div>
+        `;
+        if (!isDisabled) {
+          card.addEventListener('click', () => handleWeaponSelection(weapon.key));
+        }
+        weaponBar.appendChild(card);
+      });
+      updatePlanNextAttackUI();
+    }
+
+    function updatePlanNextAttackUI() {
+      if (weaponBar) {
+        weaponBar.classList.toggle('awaiting-plan', awaitingNextPlan);
+      }
+      if (weaponPlanOverlay) {
+        weaponPlanOverlay.classList.toggle('visible', awaitingNextPlan);
+        weaponPlanOverlay.setAttribute('aria-hidden', awaitingNextPlan ? 'false' : 'true');
+      }
+      if (planNextAttackBtn) {
+        planNextAttackBtn.disabled = !awaitingNextPlan;
+      }
+      if (practiceToggle) {
+        practiceToggle.disabled = awaitingNextPlan;
+      }
+    }
+
+    function getProgressForVocab(id) {
+      return commandState.progress.get(id) || null;
+    }
+
+    function getVocabularyDisplayEntries() {
+      if (!commandState.vocabulary.length) return [];
+      const sorted = [...commandState.vocabulary].sort((a, b) => {
+        const aProgress = getProgressForVocab(a.id);
+        const bProgress = getProgressForVocab(b.id);
+        const aCompleted = Boolean(aProgress && aProgress.completed);
+        const bCompleted = Boolean(bProgress && bProgress.completed);
+        if (aCompleted !== bCompleted) {
+          return aCompleted ? 1 : -1;
+        }
+        const aLocked = aProgress && typeof aProgress.lockedUntilTurn === 'number'
+          ? Math.max(0, aProgress.lockedUntilTurn - state.turn) > 0
+          : false;
+        const bLocked = bProgress && typeof bProgress.lockedUntilTurn === 'number'
+          ? Math.max(0, bProgress.lockedUntilTurn - state.turn) > 0
+          : false;
+        if (aLocked !== bLocked) {
+          return aLocked ? 1 : -1;
+        }
+        return a.id - b.id;
+      });
+
+      return sorted.map((entry) => {
+        const progress = getProgressForVocab(entry.id);
+        const roundsRemaining = progress && typeof progress.lockedUntilTurn === 'number'
+          ? Math.max(0, progress.lockedUntilTurn - state.turn)
+          : 0;
+        const isCompleted = Boolean(progress && progress.completed);
+        const isLocked = roundsRemaining > 0;
+        return { entry, progress, isCompleted, isLocked, roundsRemaining };
+      });
+    }
+
+    function ensureVocabularyAvailabilityForSelection() {
+      if (!commandState.vocabulary.length) return [];
+
+      let entries = getVocabularyDisplayEntries();
+      if (!entries.length) return entries;
+
+      const hasAvailable = entries.some((info) => !info.isCompleted && !info.isLocked);
+      if (hasAvailable) {
+        return entries;
+      }
+
+      let changed = false;
+      const lockedEntries = entries.filter((info) => info.isLocked && info.roundsRemaining > 0);
+
+      if (lockedEntries.length) {
+        const minimum = Math.min(...lockedEntries.map((info) => info.roundsRemaining));
+        lockedEntries.forEach((info) => {
+          if (info.roundsRemaining === minimum) {
+            const previous = commandState.progress.get(info.entry.id) || {};
+            commandState.progress.set(info.entry.id, {
+              ...previous,
+              completed: false,
+              lockedUntilTurn: null
+            });
+            changed = true;
+          }
+        });
+      } else {
+        commandState.vocabulary.forEach((entry) => {
+          const previous = commandState.progress.get(entry.id) || {};
+          commandState.progress.set(entry.id, {
+            ...previous,
+            completed: false,
+            lockedUntilTurn: null
+          });
+        });
+        changed = true;
+      }
+
+      if (changed) {
+        saveProgress();
+      }
+
+      entries = getVocabularyDisplayEntries();
+      return entries;
+    }
+
+    function refreshVocabularyRosterIfComplete() {
+      if (!commandState.vocabulary.length) return;
+      let completedCount = 0;
+      commandState.vocabulary.forEach((entry) => {
+        const progress = commandState.progress.get(entry.id);
+        if (progress && progress.completed) {
+          completedCount += 1;
+        }
+      });
+      if (completedCount === commandState.vocabulary.length) {
+        commandState.vocabulary.forEach((entry) => {
+          const progress = commandState.progress.get(entry.id);
+          if (!progress) return;
+          commandState.progress.set(entry.id, {
+            ...progress,
+            completed: false,
+            lockedUntilTurn: null
+          });
+        });
+      }
+    }
+
+    function setPracticeMode(mode) {
+      commandState.practiceMode = mode;
+      updatePracticeToggle();
+      updatePracticeToggleVisibility();
+      updateModeIndicator();
+      saveProgress();
+    }
+
+    function togglePracticeMode() {
+      const nextMode = commandState.practiceMode === 'spelling' ? 'meaning' : 'spelling';
+      setPracticeMode(nextMode);
+    }
+
+    function initializeCommandState(list) {
+      resetTargetingState();
+      commandState.vocabulary = list.map((entry, index) => ({ ...entry, id: index + 1 }));
+      commandState.progress = new Map();
+      commandState.weaponCooldowns = new Map();
+      WEAPON_CONFIGS.forEach((weapon) => {
+        commandState.weaponCooldowns.set(weapon.key, 0);
+      });
+      commandState.selectedWeapon = null;
+      commandState.pendingSelection = null;
+      commandState.practiceMode = 'spelling';
+      awaitingNextPlan = false;
+      clearStrikeArea();
+      renderWeaponBar();
+      updatePracticeToggle();
+      updatePracticeToggleVisibility();
+      updateModeIndicator();
+      updatePlanNextAttackUI();
+      lastAttackSummary = null;
+      updateAttackReportButton();
+    }
+
+    function startCommandSession(list) {
+      const prepared = prepareVocabularyList(list);
+      if (!prepared.length) {
+        showMessageModal('Unable to start', 'No valid vocabulary entries were found.');
+        return;
+      }
+      initializeCommandState(prepared);
+      saveProgress();
+    }
+
+    function restartCurrentMission() {
+      if (!commandState.vocabulary.length) {
+        showMessageModal('No Vocabulary Loaded', 'Load vocabulary before restarting the mission.');
+        return;
+      }
+      const previousMode = commandState.practiceMode;
+      const snapshot = commandState.vocabulary.map((entry) => ({
+        word: entry.word,
+        definition: entry.definition,
+        examples: [...entry.examples]
+      }));
+      initializeCommandState(snapshot);
+      if (previousMode && previousMode !== commandState.practiceMode) {
+        setPracticeMode(previousMode);
+      }
+      resetState();
+      initializeObjects();
+      refreshCounts();
+      saveProgress();
+    }
+
+    function performCompleteReset() {
+      applyGameSettings({
+        hexSide: DEFAULT_GAME_SETTINGS.hexSide,
+        initialSpawns: DEFAULT_GAME_SETTINGS.initialSpawns,
+        initialFacilities: DEFAULT_GAME_SETTINGS.initialFacilities,
+        spawnInterval: DEFAULT_GAME_SETTINGS.spawnInterval,
+        spreadInterval: DEFAULT_GAME_SETTINGS.spreadInterval,
+        initialEnemyConfig: { ...DEFAULT_GAME_SETTINGS.initialEnemyConfig },
+        capSpawnPoints: DEFAULT_CAP_SPAWN_POINTS
+      });
+      resetTargetingState();
+      commandState.vocabulary = [];
+      commandState.progress = new Map();
+      commandState.weaponCooldowns = new Map();
+      WEAPON_CONFIGS.forEach((weapon) => commandState.weaponCooldowns.set(weapon.key, 0));
+      commandState.selectedWeapon = null;
+      commandState.pendingSelection = null;
+      commandState.practiceMode = 'spelling';
+      awaitingNextPlan = false;
+      lastAttackSummary = null;
+      resetState();
+      initializeObjects();
+      refreshCounts();
+      updatePracticeToggle();
+      updatePracticeToggleVisibility();
+      updateModeIndicator();
+      renderWeaponBar();
+      updatePlanNextAttackUI();
+      updateAttackReportButton();
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
+      }
+    }
+
+    function openCustomGameModal() {
+      if (!commandState.vocabulary.length) {
+        showMessageModal('No Vocabulary Loaded', 'Load vocabulary before configuring a custom mission.');
+        return;
+      }
+
+      const workingSettings = {
+        hexSide: gameSettings.hexSide,
+        initialSpawns: gameSettings.initialSpawns,
+        initialFacilities: gameSettings.initialFacilities,
+        spawnInterval: gameSettings.spawnInterval,
+        spreadInterval: gameSettings.spreadInterval,
+        initialEnemyConfig: { ...gameSettings.initialEnemyConfig }
+      };
+
+      const MAX_UNITS_PER_SPAWN = 6;
+
+      openModal((container, close) => {
+        const heading = document.createElement('h2');
+        heading.textContent = 'Custom Mission Parameters';
+        const blurb = document.createElement('p');
+        blurb.textContent = 'Adjust the battlefield layout and default enemy presence. Changes take effect immediately after confirmation.';
+        blurb.style.marginTop = '0';
+
+        container.appendChild(heading);
+        container.appendChild(blurb);
+
+        function createSliderRow(label, min, max, value, suffix, onChange) {
+          const row = document.createElement('div');
+          row.className = 'slider-row';
+          row.style.display = 'flex';
+          row.style.flexDirection = 'column';
+          row.style.gap = '0.35rem';
+          row.style.marginTop = '0.75rem';
+
+          const header = document.createElement('div');
+          header.style.display = 'flex';
+          header.style.justifyContent = 'space-between';
+          header.style.alignItems = 'center';
+
+          const labelEl = document.createElement('span');
+          labelEl.textContent = label;
+          const valueEl = document.createElement('strong');
+          valueEl.textContent = `${value}${suffix || ''}`;
+
+          header.appendChild(labelEl);
+          header.appendChild(valueEl);
+
+          const slider = document.createElement('input');
+          slider.type = 'range';
+          slider.min = `${min}`;
+          slider.max = `${max}`;
+          slider.value = `${value}`;
+          slider.style.width = '100%';
+          slider.style.cursor = 'pointer';
+          slider.addEventListener('input', () => {
+            const numeric = Number(slider.value);
+            valueEl.textContent = `${numeric}${suffix || ''}`;
+            onChange(numeric);
+          });
+
+          row.appendChild(header);
+          row.appendChild(slider);
+          return row;
+        }
+
+        const sliders = document.createElement('div');
+        sliders.appendChild(createSliderRow('Map Size (cells per side)', 5, 10, workingSettings.hexSide, ' cells', (value) => {
+          workingSettings.hexSide = value;
+        }));
+        sliders.appendChild(createSliderRow('Starting Spawn Points', 1, 10, workingSettings.initialSpawns, ' spawns', (value) => {
+          workingSettings.initialSpawns = value;
+        }));
+        sliders.appendChild(createSliderRow('Starting Ally Facilities', 0, 10, workingSettings.initialFacilities, ' facilities', (value) => {
+          workingSettings.initialFacilities = value;
+        }));
+        sliders.appendChild(createSliderRow('New Spawn Interval (turns)', 3, 10, workingSettings.spawnInterval, ' turns', (value) => {
+          workingSettings.spawnInterval = value;
+        }));
+        sliders.appendChild(createSliderRow('Enemy Spread Interval (turns)', 1, 5, workingSettings.spreadInterval, ' turns', (value) => {
+          workingSettings.spreadInterval = value;
+        }));
+
+        const enemySection = document.createElement('div');
+        enemySection.style.marginTop = '1rem';
+        enemySection.style.display = 'flex';
+        enemySection.style.flexDirection = 'column';
+        enemySection.style.gap = '0.6rem';
+
+        const enemyHeading = document.createElement('strong');
+        enemyHeading.textContent = 'Enemies per Spawn Point';
+        enemySection.appendChild(enemyHeading);
+
+        const remainingEl = document.createElement('span');
+        remainingEl.style.fontSize = '0.85rem';
+        remainingEl.style.opacity = '0.75';
+        enemySection.appendChild(remainingEl);
+
+        const enemyControls = document.createElement('div');
+        enemyControls.style.display = 'flex';
+        enemyControls.style.flexDirection = 'column';
+        enemyControls.style.gap = '0.5rem';
+
+        const enemyTypes = [
+          { key: 'light', label: 'Light Units' },
+          { key: 'heavy', label: 'Heavy Units' },
+          { key: 'tank', label: 'Tank Units' }
+        ];
+
+        const controlMap = new Map();
+
+        enemyTypes.forEach(({ key, label }) => {
+          const row = document.createElement('div');
+          row.style.display = 'flex';
+          row.style.alignItems = 'center';
+          row.style.gap = '0.75rem';
+
+          const name = document.createElement('span');
+          name.style.flex = '1';
+          name.textContent = label;
+
+          const minusBtn = document.createElement('button');
+          minusBtn.type = 'button';
+          minusBtn.textContent = '−';
+          minusBtn.style.width = '2.25rem';
+          minusBtn.style.height = '2.25rem';
+
+          const valueEl = document.createElement('strong');
+          valueEl.textContent = `${workingSettings.initialEnemyConfig[key]}`;
+          valueEl.style.minWidth = '1.5rem';
+          valueEl.style.textAlign = 'center';
+
+          const plusBtn = document.createElement('button');
+          plusBtn.type = 'button';
+          plusBtn.textContent = '+';
+          plusBtn.style.width = '2.25rem';
+          plusBtn.style.height = '2.25rem';
+
+          [minusBtn, plusBtn].forEach((btn) => {
+            btn.style.borderRadius = '8px';
+            btn.style.border = '1px solid rgba(255,255,255,0.25)';
+            btn.style.background = 'rgba(255,255,255,0.08)';
+            btn.style.color = '#fff';
+            btn.style.fontSize = '1.2rem';
+            btn.style.display = 'inline-flex';
+            btn.style.alignItems = 'center';
+            btn.style.justifyContent = 'center';
+          });
+
+          minusBtn.addEventListener('click', () => {
+            if (workingSettings.initialEnemyConfig[key] <= 0) return;
+            workingSettings.initialEnemyConfig[key] -= 1;
+            updateEnemyControls();
+          });
+
+          plusBtn.addEventListener('click', () => {
+            const total = totalEnemyUnits();
+            if (total >= MAX_UNITS_PER_SPAWN) return;
+            workingSettings.initialEnemyConfig[key] += 1;
+            updateEnemyControls();
+          });
+
+          row.appendChild(name);
+          row.appendChild(minusBtn);
+          row.appendChild(valueEl);
+          row.appendChild(plusBtn);
+          enemyControls.appendChild(row);
+
+          controlMap.set(key, { valueEl, minusBtn, plusBtn });
+        });
+
+        enemySection.appendChild(enemyControls);
+
+        container.appendChild(sliders);
+        container.appendChild(enemySection);
+
+        const actions = document.createElement('div');
+        actions.className = 'modal-actions';
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.addEventListener('click', () => {
+          targetingState.awaitingVocabulary = false;
+          renderWeaponBar();
+          close('cancelled');
+        });
+
+        const confirmBtn = document.createElement('button');
+        confirmBtn.type = 'button';
+        confirmBtn.classList.add('primary');
+        confirmBtn.textContent = 'Apply Settings';
+        confirmBtn.addEventListener('click', () => {
+          if (totalEnemyUnits() !== MAX_UNITS_PER_SPAWN) return;
+          applyGameSettings({
+            hexSide: workingSettings.hexSide,
+            initialSpawns: workingSettings.initialSpawns,
+            initialFacilities: workingSettings.initialFacilities,
+            spawnInterval: workingSettings.spawnInterval,
+            spreadInterval: workingSettings.spreadInterval,
+            initialEnemyConfig: { ...workingSettings.initialEnemyConfig }
+          });
+          restartCurrentMission();
+          close('confirmed');
+        });
+
+        actions.appendChild(cancelBtn);
+        actions.appendChild(confirmBtn);
+        container.appendChild(actions);
+
+        function totalEnemyUnits() {
+          return workingSettings.initialEnemyConfig.light + workingSettings.initialEnemyConfig.heavy + workingSettings.initialEnemyConfig.tank;
+        }
+
+        function updateEnemyControls() {
+          const total = totalEnemyUnits();
+          const remaining = MAX_UNITS_PER_SPAWN - total;
+          remainingEl.textContent = `Remaining units to assign: ${remaining}`;
+          confirmBtn.disabled = total !== MAX_UNITS_PER_SPAWN;
+
+          controlMap.forEach(({ valueEl, minusBtn, plusBtn }, key) => {
+            const current = workingSettings.initialEnemyConfig[key];
+            valueEl.textContent = `${current}`;
+            minusBtn.disabled = current === 0;
+            plusBtn.disabled = remaining === 0;
+          });
+        }
+
+        updateEnemyControls();
+      });
+    }
+
+    function handleWeaponSelection(weaponKey) {
+      if (targetingState.active || targetingState.awaitingVocabulary) return;
+      if (awaitingNextPlan) return;
+      const cooldown = commandState.weaponCooldowns.get(weaponKey) || 0;
+      if (cooldown > 0) return;
+      if (!commandState.vocabulary.length) {
+        showMessageModal('No Vocabulary Loaded', 'Load vocabulary before initiating an attack.');
+        return;
+      }
+      commandState.selectedWeapon = weaponKey;
+      renderWeaponBar();
+      startWeaponTargeting(weaponKey);
+    }
+
+    function resetTargetingState() {
+      targetingState.active = false;
+      targetingState.weaponKey = null;
+      targetingState.vocabId = null;
+      targetingState.phase = 0;
+      targetingState.startCell = null;
+      targetingState.phaseTwoCell = null;
+      targetingState.phaseTwoVector = null;
+      targetingState.direction = null;
+      targetingState.incorrectPenalty = 0;
+      targetingState.awaitingVocabulary = false;
+      commandState.pendingSelection = null;
+      clearPreviewCells();
+      clearSelectedCells();
+      clearDirectionOptions();
+      updateTargetingOverlay({ visible: false });
+    }
+
+    function buildMeaningOptions(entry) {
+      const exclude = new Set([entry.word.toLowerCase()]);
+      commandState.vocabulary.forEach((item) => {
+        if (item.id !== entry.id) {
+          exclude.add(item.word.toLowerCase());
+        }
+      });
+
+      const pool = commandState.vocabulary.filter((item) => item.id !== entry.id);
+      if (pool.length < 3) {
+        const needed = 3 - pool.length;
+        const fillers = sampleBackupWords(needed, exclude);
+        fillers.forEach((item) => {
+          pool.push({ ...item, id: `backup-${item.word}` });
+          exclude.add(item.word.toLowerCase());
+        });
+      }
+
+      const distractors = shuffleArray(pool)
+        .slice(0, 3)
+        .map((item) => ({ text: item.definition, correct: false }));
+
+      const options = [...distractors];
+      const insertIndex = Math.floor(Math.random() * (options.length + 1));
+      options.splice(insertIndex, 0, { text: entry.definition, correct: true });
+      return options;
+    }
+
+    function openVocabularySelectionModal() {
+      const weapon = WEAPON_CONFIGS.find((w) => w.key === targetingState.weaponKey);
+      if (!weapon) return;
+      const entries = ensureVocabularyAvailabilityForSelection();
+      targetingState.awaitingVocabulary = true;
+      renderWeaponBar();
+
+      openModal((container, close) => {
+        const heading = document.createElement('h2');
+        heading.textContent = 'Select Vocabulary';
+        const subtitle = document.createElement('p');
+        subtitle.textContent = `Choose a word to deploy the ${weapon.name}.`;
+        subtitle.style.marginTop = '0';
+
+        let selectableCount = 0;
+        const groupedCards = {
+          long: [],
+          medium: [],
+          short: [],
+          unavailable: []
+        };
+
+        function getLengthTier(length) {
+          if (length >= 11) return 'long';
+          if (length >= 6) return 'medium';
+          return 'short';
+        }
+
+        const tierHeadings = {
+          long: 'Tier 11+ Letters',
+          medium: 'Tier 6-10 Letters',
+          short: 'Tier 1-5 Letters',
+          unavailable: 'Unavailable'
+        };
+
+        entries.forEach((info) => {
+          const { entry, isCompleted, isLocked, roundsRemaining } = info;
+          const length = entry.word.replace(/\s+/g, '').length;
+          const tier = getLengthTier(length);
+          const card = document.createElement('button');
+          card.type = 'button';
+          card.className = 'vocab-card';
+
+          const title = document.createElement('h3');
+          title.style.margin = '0';
+          title.style.fontSize = '1.05rem';
+          title.style.letterSpacing = '0.03em';
+          title.textContent = commandState.practiceMode === 'spelling' ? entry.definition : entry.word;
+
+          const meta = document.createElement('div');
+          meta.style.opacity = '0.7';
+          meta.style.fontSize = '0.85rem';
+          if (commandState.practiceMode === 'spelling') {
+            const tierLabel = tierHeadings[tier];
+            meta.textContent = tierLabel;
+          } else {
+            const sample = randomItem(entry.examples) || '';
+            meta.textContent = sample || 'Example unavailable';
+          }
+
+          card.appendChild(title);
+          card.appendChild(meta);
+
+          let statusText = '';
+          if (isCompleted) {
+            card.classList.add('completed');
+            statusText = 'Completed';
+          } else if (isLocked) {
+            card.classList.add('locked');
+            statusText = `Locked ${roundsRemaining} turn${roundsRemaining === 1 ? '' : 's'} remaining`;
+          }
+
+          if (statusText) {
+            const status = document.createElement('div');
+            status.className = 'vocab-status';
+            status.textContent = statusText;
+            card.appendChild(status);
+          }
+
+          const clickable = !isCompleted && !isLocked;
+          if (!clickable) {
+            card.classList.add('disabled');
+            card.disabled = true;
+            groupedCards.unavailable.push(card);
+          } else {
+            selectableCount += 1;
+            card.addEventListener('click', () => {
+              targetingState.vocabId = entry.id;
+              close('selected');
+              handleVocabSelection(entry);
+            });
+            groupedCards[tier].push(card);
+          }
+        });
+
+        container.appendChild(heading);
+        container.appendChild(subtitle);
+
+        if (!entries.length) {
+          const empty = document.createElement('p');
+          empty.textContent = 'Load vocabulary to begin the exercise.';
+          empty.style.opacity = '0.7';
+          container.appendChild(empty);
+        }
+
+        const orderedKeys = ['long', 'medium', 'short', 'unavailable'];
+        orderedKeys.forEach((key) => {
+          if (!groupedCards[key].length) return;
+          const section = document.createElement('div');
+          section.className = 'vocab-tier-section';
+          const tierHeading = document.createElement('h3');
+          tierHeading.className = 'vocab-tier-heading';
+          tierHeading.textContent = tierHeadings[key];
+          const tierGrid = document.createElement('div');
+          tierGrid.className = 'vocab-grid';
+          groupedCards[key].forEach((card) => tierGrid.appendChild(card));
+          section.appendChild(tierHeading);
+          section.appendChild(tierGrid);
+          container.appendChild(section);
+        });
+
+        if (!selectableCount && entries.length) {
+          const notice = document.createElement('p');
+          notice.textContent = 'No vocabulary is currently available. Wait for lockouts to expire or load more words.';
+          notice.style.opacity = '0.7';
+          notice.style.marginTop = '0.5rem';
+          container.appendChild(notice);
+        }
+
+        const actions = document.createElement('div');
+        actions.className = 'modal-actions';
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.textContent = 'Cancel Strike';
+        cancelBtn.addEventListener('click', () => {
+          targetingState.awaitingVocabulary = false;
+          renderWeaponBar();
+          close('cancelled');
+        });
+        actions.appendChild(cancelBtn);
+        container.appendChild(actions);
+      }, {
+        onClose: (reason) => {
+          if (reason === 'selected') return;
+          cancelTargeting();
+        }
+      });
+    }
+
+    function handleVocabSelection(entry) {
+      if (!commandState.selectedWeapon) return;
+      const progress = getProgressForVocab(entry.id);
+      if (progress && progress.completed) return;
+      targetingState.vocabId = entry.id;
+      commandState.pendingSelection = null;
+      targetingState.incorrectPenalty = 0;
+      if (commandState.practiceMode === 'spelling') {
+        openSpellingExercise(entry);
+      } else {
+        openMeaningExercise(entry);
+      }
+    }
+
+    function setPendingSelection(entry, weaponKey, data) {
+      commandState.pendingSelection = {
+        vocabId: entry.id,
+        weaponKey,
+        ...data
+      };
+    }
+
+    function openSpellingExercise(entry) {
+      const weaponKey = targetingState.weaponKey || commandState.selectedWeapon;
+      if (!weaponKey) return;
+      const example = randomItem(entry.examples);
+      const blankedExample = example.replace(new RegExp(entry.word, 'gi'), '___');
+
+      openModal((container, close) => {
+        const heading = document.createElement('h2');
+        heading.textContent = 'Spelling Practice';
+        const definition = document.createElement('p');
+        definition.textContent = entry.definition;
+        const exampleEl = document.createElement('p');
+        exampleEl.textContent = blankedExample;
+
+        const input = document.createElement('input');
+        input.type = 'text';
+        input.placeholder = 'Type the vocabulary word';
+
+        const feedback = document.createElement('div');
+        feedback.className = 'answer-feedback';
+
+        const actions = document.createElement('div');
+        actions.className = 'modal-actions';
+
+        const submitBtn = document.createElement('button');
+        submitBtn.type = 'button';
+        submitBtn.textContent = 'Submit Answer';
+
+        const confirmBtn = document.createElement('button');
+        confirmBtn.type = 'button';
+        confirmBtn.textContent = 'Confirm Attack Result';
+        confirmBtn.classList.add('primary');
+        confirmBtn.style.display = 'none';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.addEventListener('click', () => close('cancelled'));
+
+        function evaluateAnswer() {
+          const answer = input.value.trim();
+          const sanitizedTarget = entry.word.replace(/\s+/g, '').toLowerCase();
+          const sanitizedAnswer = answer.replace(/\s+/g, '').toLowerCase();
+          const maxLen = Math.max(sanitizedTarget.length, sanitizedAnswer.length);
+          let incorrectLetters = 0;
+          for (let i = 0; i < maxLen; i++) {
+            const targetChar = sanitizedTarget[i] || '';
+            const answerChar = sanitizedAnswer[i] || '';
+            if (targetChar !== answerChar) {
+              incorrectLetters += 1;
+            }
+          }
+
+          feedback.innerHTML = '';
+          let ptr = 0;
+          for (const char of entry.word) {
+            const span = document.createElement('span');
+            if (char === ' ') {
+              span.textContent = '\u00A0';
+              span.style.opacity = '0.4';
+            } else {
+              const targetChar = sanitizedTarget[ptr] || '';
+              const answerChar = sanitizedAnswer[ptr] || '';
+              span.textContent = char;
+              span.classList.add(targetChar === answerChar ? 'correct' : 'incorrect');
+              ptr += 1;
+            }
+            feedback.appendChild(span);
+          }
+
+          input.disabled = true;
+          submitBtn.style.display = 'none';
+          confirmBtn.style.display = 'inline-flex';
+
+          targetingState.incorrectPenalty = incorrectLetters;
+          setPendingSelection(entry, weaponKey, {
+            incorrectPenalty: incorrectLetters,
+            providedAnswer: answer,
+            correct: incorrectLetters === 0
+          });
+        }
+
+        submitBtn.addEventListener('click', () => {
+          evaluateAnswer();
+        });
+
+        input.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' && !input.disabled) {
+            event.preventDefault();
+            evaluateAnswer();
+          }
+        });
+
+        confirmBtn.addEventListener('click', () => {
+          const pending = commandState.pendingSelection;
+          if (!pending) return;
+          close('confirmed');
+          executeAttack(entry, pending);
+        });
+
+        actions.appendChild(cancelBtn);
+        actions.appendChild(submitBtn);
+        actions.appendChild(confirmBtn);
+
+        container.appendChild(heading);
+        container.appendChild(definition);
+        container.appendChild(exampleEl);
+        container.appendChild(input);
+        container.appendChild(feedback);
+        container.appendChild(actions);
+        input.focus();
+      }, {
+        onClose: (reason) => {
+          if (reason === 'confirmed') return;
+          if (targetingState.awaitingVocabulary) {
+            setTimeout(() => openVocabularySelectionModal(), 0);
+          }
+        }
+      });
+    }
+
+    function openMeaningExercise(entry) {
+      const weaponKey = targetingState.weaponKey || commandState.selectedWeapon;
+      if (!weaponKey) return;
+      const options = buildMeaningOptions(entry);
+
+      openModal((container, close) => {
+        const heading = document.createElement('h2');
+        heading.textContent = 'Meaning Practice';
+        const prompt = document.createElement('p');
+        prompt.textContent = `Select the correct definition for "${entry.word}".`;
+
+        const list = document.createElement('div');
+        list.className = 'options-list';
+
+        const actions = document.createElement('div');
+        actions.className = 'modal-actions';
+
+        const confirmBtn = document.createElement('button');
+        confirmBtn.type = 'button';
+        confirmBtn.textContent = 'Confirm Attack Result';
+        confirmBtn.classList.add('primary');
+        confirmBtn.style.display = 'none';
+
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.addEventListener('click', () => close('cancelled'));
+
+        let resolved = false;
+
+        options.forEach((option, index) => {
+          const button = document.createElement('button');
+          button.type = 'button';
+          button.textContent = option.text;
+          button.addEventListener('click', () => {
+            if (resolved) return;
+            resolved = true;
+            button.classList.add('selected');
+            if (option.correct) {
+              button.classList.add('correct');
+            } else {
+              button.classList.add('incorrect');
+            }
+            list.querySelectorAll('button').forEach((btn, idx) => {
+              btn.disabled = true;
+              if (options[idx].correct) {
+                btn.classList.add('correct');
+              }
+            });
+
+            const incorrectPenalty = option.correct ? 0 : entry.word.replace(/\s+/g, '').length;
+            targetingState.incorrectPenalty = incorrectPenalty;
+            setPendingSelection(entry, weaponKey, {
+              incorrectPenalty,
+              selectedDefinition: option.text,
+              correct: option.correct
+            });
+
+            confirmBtn.style.display = 'inline-flex';
+          });
+          list.appendChild(button);
+        });
+
+        confirmBtn.addEventListener('click', () => {
+          const pending = commandState.pendingSelection;
+          if (!pending) return;
+          close('confirmed');
+          executeAttack(entry, pending);
+        });
+
+        actions.appendChild(cancelBtn);
+        actions.appendChild(confirmBtn);
+
+        container.appendChild(heading);
+        container.appendChild(prompt);
+        container.appendChild(list);
+        container.appendChild(actions);
+      }, {
+        onClose: (reason) => {
+          if (reason === 'confirmed') return;
+          if (targetingState.awaitingVocabulary) {
+            setTimeout(() => openVocabularySelectionModal(), 0);
+          }
+        }
+      });
+    }
+
+    function startWeaponTargeting(weaponKey) {
+      const weapon = WEAPON_CONFIGS.find((w) => w.key === weaponKey);
+      if (!weapon) return;
+      targetingState.active = true;
+      targetingState.weaponKey = weapon.key;
+      targetingState.vocabId = null;
+      targetingState.phase = 1;
+      targetingState.startCell = null;
+      targetingState.phaseTwoCell = null;
+      targetingState.phaseTwoVector = null;
+      targetingState.direction = null;
+      targetingState.incorrectPenalty = 0;
+      targetingState.awaitingVocabulary = false;
+      clearPreviewCells();
+      clearSelectedCells();
+      clearDirectionOptions();
+      const initialInstruction = weapon.phases === 3
+        ? `Select center cell for ${weapon.name}.`
+        : `Select starting cell for ${weapon.name}.`;
+      updateTargetingOverlay({
+        visible: true,
+        instruction: initialInstruction,
+        showConfirm: false,
+        showReselect: false,
+        showCancel: true,
+        confirmDisabled: true
+      });
+    }
+
+    function handlePhaseOneSelection(cell) {
+      const weapon = WEAPON_CONFIGS.find((w) => w.key === targetingState.weaponKey);
+      if (!weapon) return;
+      targetingState.startCell = cell;
+      setSelectedCells([cell]);
+      if (weapon.phases === 1) {
+        const preview = computeWeaponCells(cell, weapon.key);
+        setPreviewCells(preview);
+        updateTargetingOverlay({
+          instruction: `Confirm strike coordinates for ${weapon.name}.`,
+          showConfirm: true,
+          showReselect: true,
+          confirmDisabled: false
+        });
+        return;
+      }
+
+      targetingState.phase = 2;
+      if (weapon.phases === 3) {
+        const options = buildThreePhaseAdjacentOptions(cell);
+        if (!options.length) {
+          updateTargetingOverlay({
+            instruction: 'No adjacent cells available. Please reselect the center.',
+            showConfirm: false,
+            showReselect: true,
+            confirmDisabled: true
+          });
+          return;
+        }
+        highlightDirectionOptions(options);
+        updateTargetingOverlay({
+          instruction: 'Select an adjacent cell to orient the strike.',
+          showConfirm: false,
+          showReselect: true,
+          confirmDisabled: true
+        });
+        return;
+      }
+
+      let options = [];
+      if (weapon.pattern === 'triangle3') {
+        options = buildTriangleDirectionOptions(cell);
+      } else {
+        options = buildLineDirectionOptions(cell, weapon);
+      }
+      if (!options.length) {
+        updateTargetingOverlay({
+          instruction: 'No valid directions from this cell. Please reselect.',
+          showConfirm: false,
+          showReselect: true,
+          confirmDisabled: true
+        });
+        return;
+      }
+      highlightDirectionOptions(options);
+      updateTargetingOverlay({
+        instruction: 'Select a direction to finalize the strike path.',
+        showConfirm: false,
+        showReselect: true,
+        confirmDisabled: true
+      });
+    }
+
+    function handlePhaseTwoSelection(cell) {
+      const weapon = WEAPON_CONFIGS.find((w) => w.key === targetingState.weaponKey);
+      const key = axialKey(cell.q, cell.r);
+      const option = targetingState.directionCellMap.get(key);
+      if (!option) return;
+
+      if (weapon && weapon.phases === 3) {
+        const center = targetingState.startCell;
+        if (!center) return;
+        const neighbor = option.targetCell || option.clickCell;
+        if (!neighbor) return;
+        targetingState.phaseTwoCell = neighbor;
+        targetingState.phaseTwoVector = {
+          q: neighbor.q - center.q,
+          r: neighbor.r - center.r
+        };
+        const selectionCells = option.selectionCells || option.cells || [];
+        const previewCells = option.previewCells || selectionCells;
+        if (previewCells.length) {
+          setPreviewCells(previewCells);
+        } else {
+          clearPreviewCells();
+        }
+        setSelectedCells(selectionCells);
+        const thirdOptions = buildThreePhaseExtensionOptions(center, neighbor);
+        if (!thirdOptions.length) {
+          targetingState.phaseTwoCell = null;
+          targetingState.phaseTwoVector = null;
+          setSelectedCells([center]);
+          clearPreviewCells();
+          highlightDirectionOptions(buildThreePhaseAdjacentOptions(center));
+          updateTargetingOverlay({
+            instruction: 'No extension available from this orientation. Choose a different adjacent cell.',
+            showConfirm: false,
+            showReselect: true,
+            confirmDisabled: true
+          });
+          return;
+        }
+        targetingState.phase = 3;
+        targetingState.direction = null;
+        highlightDirectionOptions(thirdOptions);
+        clearPreviewCells();
+        updateTargetingOverlay({
+          instruction: 'Select a third cell adjacent to both highlighted cells.',
+          showConfirm: false,
+          showReselect: true,
+          confirmDisabled: true
+        });
+        return;
+      }
+
+      targetingState.direction = option;
+      setPreviewCells(option.cells);
+      setSelectedCells(option.cells);
+      updateTargetingOverlay({
+        instruction: 'Confirm strike coordinates.',
+        showConfirm: true,
+        showReselect: true,
+        confirmDisabled: false
+      });
+    }
+
+    function handlePhaseThreeSelection(cell) {
+      const weapon = WEAPON_CONFIGS.find((w) => w.key === targetingState.weaponKey);
+      if (!weapon || weapon.phases !== 3) return;
+      const key = axialKey(cell.q, cell.r);
+      const option = targetingState.directionCellMap.get(key);
+      if (!option) return;
+      const center = targetingState.startCell;
+      const second = targetingState.phaseTwoCell;
+      if (!center || !second) return;
+      const vectors = option.vectorsFromCenter || [];
+      let vectorsFromCenter = vectors.length === 2 ? vectors : null;
+      if (!vectorsFromCenter) {
+        const secondaryCell = option.targetCell || option.clickCell || cell;
+        const secondaryVector = secondaryCell
+          ? { q: secondaryCell.q - center.q, r: secondaryCell.r - center.r }
+          : null;
+        if (!targetingState.phaseTwoVector || !secondaryVector) return;
+        vectorsFromCenter = [
+          { q: targetingState.phaseTwoVector.q, r: targetingState.phaseTwoVector.r },
+          secondaryVector
+        ];
+      }
+      const selection = option.selectionCells && option.selectionCells.length
+        ? option.selectionCells
+        : (option.cells && option.cells.length
+          ? option.cells
+          : [center, second, option.targetCell || option.clickCell || cell]);
+      const previewCells = option.previewCells && option.previewCells.length
+        ? option.previewCells
+        : selection;
+      const resultCells = option.cells && option.cells.length
+        ? option.cells
+        : [center, second, option.targetCell || option.clickCell || cell];
+      targetingState.direction = {
+        key: option.key,
+        cells: resultCells,
+        vectorsFromCenter
+      };
+      setPreviewCells(previewCells);
+      setSelectedCells(selection);
+      updateTargetingOverlay({
+        instruction: 'Confirm strike coordinates.',
+        showConfirm: true,
+        showReselect: true,
+        confirmDisabled: false
+      });
+    }
+
+    function handleHexClick(event, cell) {
+      if (!targetingState.active) return;
+      event.preventDefault();
+      if (targetingState.phase === 1) {
+        handlePhaseOneSelection(cell);
+      } else if (targetingState.phase === 2) {
+        handlePhaseTwoSelection(cell);
+      } else if (targetingState.phase === 3) {
+        handlePhaseThreeSelection(cell);
+      }
+    }
+
+    function handleHexHover(cell) {
+      if (!targetingState.active) return;
+      if (targetingState.phase === 2 || targetingState.phase === 3) {
+        const option = targetingState.directionCellMap.get(axialKey(cell.q, cell.r));
+        if (option) {
+          const previewCells = option.previewCells || option.cells || [];
+          if (previewCells.length) {
+            setPreviewCells(previewCells);
+          } else if (targetingState.direction && targetingState.direction.cells && targetingState.direction.cells.length) {
+            setPreviewCells(targetingState.direction.cells);
+          } else {
+            clearPreviewCells();
+          }
+        } else if (targetingState.direction && targetingState.direction.cells && targetingState.direction.cells.length) {
+          setPreviewCells(targetingState.direction.cells);
+        } else {
+          clearPreviewCells();
+        }
+      }
+    }
+
+    function handleHexLeave(cell) {
+      if (!targetingState.active) return;
+      if ((targetingState.phase === 2 || targetingState.phase === 3) && !targetingState.direction) {
+        clearPreviewCells();
+      }
+    }
+
+    function getTargetCellsFromSelection(startCell) {
+      const weapon = WEAPON_CONFIGS.find((w) => w.key === targetingState.weaponKey);
+      if (!weapon) return [];
+      if (weapon.phases === 3) {
+        const direction = targetingState.direction;
+        if (!direction) return [];
+        if (Array.isArray(direction.vectorsFromCenter)) {
+          const cells = [startCell];
+          for (const vector of direction.vectorsFromCenter) {
+            const next = getCell(startCell.q + vector.q, startCell.r + vector.r);
+            if (!next) {
+              return [];
+            }
+            cells.push(next);
+          }
+          return cells;
+        }
+        if (direction.cells && direction.cells.length) {
+          return direction.cells;
+        }
+        return [];
+      }
+      if (weapon.pattern === 'line3' || weapon.pattern === 'line5') {
+        const direction = targetingState.direction;
+        if (!direction || !direction.vector) return [];
+        return getLineCells(startCell, direction.vector, weapon.pattern === 'line3' ? 3 : 5);
+      }
+      if (weapon.pattern === 'triangle3') {
+        const direction = targetingState.direction;
+        if (!direction || !direction.direction) return [];
+        return getTriangleCells(startCell, direction.direction.key);
+      }
+      return computeWeaponCells(startCell, weapon.key);
+    }
+
+    function confirmTargetSelection() {
+      if (!targetingState.active) return;
+      const weapon = WEAPON_CONFIGS.find((w) => w.key === targetingState.weaponKey);
+      if (!weapon || !targetingState.startCell) return;
+
+      const previewCells = getTargetCellsFromSelection(targetingState.startCell).filter(Boolean);
+      if (!previewCells.length) {
+        showMessageModal('Invalid Selection', 'The chosen coordinates are out of range. Please reselect.');
+        return;
+      }
+
+      setSelectedCells(previewCells);
+      clearPreviewCells();
+      clearDirectionOptions();
+      targetingState.active = false;
+      updateTargetingOverlay({ visible: false });
+      renderWeaponBar();
+      openVocabularySelectionModal();
+    }
+
+    function executeAttack(entry, pending) {
+      const weapon = WEAPON_CONFIGS.find((w) => w.key === targetingState.weaponKey);
+      if (!weapon || !targetingState.startCell) return;
+
+      const originalStart = targetingState.startCell;
+      const penalty = targetingState.incorrectPenalty || 0;
+      let actualStart = originalStart;
+      if (penalty > 0) {
+        actualStart = displaceCellRandomly(originalStart, penalty);
+      }
+
+      const strikeCells = getTargetCellsFromSelection(actualStart).filter(Boolean);
+      if (!strikeCells.length) {
+        showMessageModal('Strike Drifted', 'The attack drifted outside the mission grid. The strike has been aborted.');
+        resetTargetingState();
+        commandState.selectedWeapon = null;
+        commandState.pendingSelection = null;
+        renderWeaponBar();
+        return;
+      }
+
+      const baseDamage = entry.word.replace(/\s+/g, '').length;
+      const totalDamage = Math.round(baseDamage * weapon.damageMultiplier * 10) / 10;
+      applyDamageToCells(strikeCells, totalDamage);
+
+      commandState.weaponCooldowns.set(weapon.key, weapon.cooldown);
+      commandState.selectedWeapon = null;
+
+      const details = pending || {};
+      const wasCorrect = Boolean(details.correct);
+      const previous = getProgressForVocab(entry.id) || {};
+      const lockedUntilTurn = wasCorrect ? null : state.turn + INCORRECT_LOCKOUT_ROUNDS + 1;
+      commandState.progress.set(entry.id, {
+        ...previous,
+        completed: wasCorrect,
+        weaponKey: weapon.key,
+        incorrectPenalty: penalty,
+        damage: totalDamage,
+        correct: wasCorrect,
+        details: { ...details },
+        lockedUntilTurn,
+        lastStrikeTurn: state.turn,
+        lastStrike: strikeCells.map((cell) => ({ q: cell.q, r: cell.r })),
+        originalStart: originalStart ? { q: originalStart.q, r: originalStart.r } : null,
+        actualStart: actualStart ? { q: actualStart.q, r: actualStart.r } : null
+      });
+
+      commandState.pendingSelection = null;
+
+      const roundsRemaining = lockedUntilTurn != null
+        ? Math.max(0, lockedUntilTurn - (state.turn + 1))
+        : 0;
+
+      refreshVocabularyRosterIfComplete();
+
+      resetTargetingState();
+      awaitingNextPlan = true;
+      renderWeaponBar();
+      updatePracticeToggleVisibility();
+      updateModeIndicator();
+      markStrikeArea(strikeCells);
+
+      storeAttackSummary({
+        entry,
+        weapon,
+        baseDamage,
+        totalDamage,
+        penalty,
+        originalStart,
+        actualStart,
+        wasCorrect,
+        roundsRemaining
+      });
+
+      saveProgress();
+    }
+
+    function reselectTargetArea() {
+      if (!targetingState.active) return;
+      const weapon = WEAPON_CONFIGS.find((w) => w.key === targetingState.weaponKey);
+      targetingState.phase = 1;
+      targetingState.startCell = null;
+      targetingState.direction = null;
+      targetingState.incorrectPenalty = 0;
+      clearPreviewCells();
+      clearSelectedCells();
+      clearDirectionOptions();
+      updateTargetingOverlay({
+        instruction: weapon
+          ? (weapon.phases === 3 ? `Select center cell for ${weapon.name}.` : `Select starting cell for ${weapon.name}.`)
+          : 'Select starting cell.',
+        showConfirm: false,
+        showReselect: false,
+        confirmDisabled: true
+      });
+    }
+
+    function cancelTargeting() {
+      if (!targetingState.active && !targetingState.awaitingVocabulary) return;
+      resetTargetingState();
+      commandState.selectedWeapon = null;
+      renderWeaponBar();
+    }
+
+    function serializeMapState() {
+      return {
+        turn: state.turn,
+        spawnPoints: state.spawnPoints.map((spawn) => ({ ...spawn })),
+        facilities: state.facilities.map((facility) => ({ ...facility })),
+        enemies: state.enemies.map((enemy) => ({ ...enemy })),
+        enemyCounts: { ...state.enemyCounts },
+        nextIds: {
+          spawn: state.nextSpawnId,
+          facility: state.nextFacilityId,
+          enemy: state.nextEnemyId
+        }
+      };
+    }
+
+    function serializeCommandState() {
+      return {
+        practiceMode: commandState.practiceMode,
+        vocabulary: commandState.vocabulary.map((entry) => ({ word: entry.word, definition: entry.definition, examples: entry.examples })),
+        progress: Array.from(commandState.progress.entries()),
+        weaponCooldowns: Array.from(commandState.weaponCooldowns.entries()),
+        awaitingNextPlan,
+        strikeHighlight: lastStrikeCells.map((cell) => cell ? { q: cell.q, r: cell.r } : null),
+        lastAttackSummary,
+        settings: {
+          hexSide: gameSettings.hexSide,
+          initialSpawns: gameSettings.initialSpawns,
+          initialFacilities: gameSettings.initialFacilities,
+          initialEnemyConfig: { ...gameSettings.initialEnemyConfig },
+          spawnInterval: gameSettings.spawnInterval,
+          spreadInterval: gameSettings.spreadInterval,
+          capSpawnPoints: CAP_SPAWN_POINTS
+        }
+      };
+    }
+
+    function saveProgress() {
+      if (typeof localStorage === 'undefined') return;
+      try {
+        const payload = {
+          map: serializeMapState(),
+          command: serializeCommandState()
+        };
+        localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify(payload));
+      } catch (error) {
+        console.warn('Unable to save progress', error);
+      }
+    }
+
+    function restoreMapState(mapData) {
+      if (!mapData) return;
+      resetState();
+      state.turn = mapData.turn || 0;
+      state.enemyCounts = mapData.enemyCounts ? { ...mapData.enemyCounts } : { light: 0, heavy: 0, tank: 0 };
+      state.nextSpawnId = mapData.nextIds?.spawn || state.nextSpawnId;
+      state.nextFacilityId = mapData.nextIds?.facility || state.nextFacilityId;
+      state.nextEnemyId = mapData.nextIds?.enemy || state.nextEnemyId;
+
+      (Array.isArray(mapData.spawnPoints) ? mapData.spawnPoints : []).forEach((spawnData) => {
+        const spawn = { ...spawnData };
+        state.spawnPoints.push(spawn);
+        const cell = getCell(spawn.q, spawn.r);
+        if (cell) {
+          registerOccupant(cell, {
+            renderType: 'spawn',
+            label: formatHealth(spawn.health),
+            contrast: 'dark',
+            entityType: 'spawn',
+            reference: spawn
+          });
+        }
+      });
+
+      (Array.isArray(mapData.facilities) ? mapData.facilities : []).forEach((facilityData) => {
+        const facility = { ...facilityData };
+        state.facilities.push(facility);
+        const cell = getCell(facility.q, facility.r);
+        if (cell) {
+          registerOccupant(cell, {
+            renderType: 'facility',
+            label: formatHealth(facility.health),
+            contrast: 'light',
+            entityType: 'facility',
+            reference: facility
+          });
+        }
+      });
+
+      (Array.isArray(mapData.enemies) ? mapData.enemies : []).forEach((enemyData) => {
+        const enemy = { ...enemyData };
+        state.enemies.push(enemy);
+        const cell = getCell(enemy.q, enemy.r);
+        if (cell) {
+          registerOccupant(cell, {
+            renderType: `enemy-${enemy.type}`,
+            label: formatHealth(enemy.health),
+            contrast: enemy.type === 'light' ? 'dark' : 'light',
+            entityType: 'enemy',
+            reference: enemy
+          });
+        }
+      });
+
+      refreshCounts();
+    }
+
+    function restoreCommandState(commandData) {
+      if (!commandData || !commandData.vocabulary || !commandData.vocabulary.length) return;
+      if (commandData.settings) {
+        applyGameSettings(commandData.settings, { rebuildGrid: false });
+      }
+      initializeCommandState(commandData.vocabulary);
+      commandState.practiceMode = commandData.practiceMode || 'spelling';
+      commandState.progress = new Map(commandData.progress || []);
+      commandState.weaponCooldowns = new Map(commandData.weaponCooldowns || []);
+      WEAPON_CONFIGS.forEach((weapon) => {
+        if (!commandState.weaponCooldowns.has(weapon.key)) {
+          commandState.weaponCooldowns.set(weapon.key, 0);
+        }
+      });
+      commandState.selectedWeapon = null;
+      commandState.pendingSelection = null;
+      awaitingNextPlan = Boolean(commandData.awaitingNextPlan);
+      lastAttackSummary = commandData.lastAttackSummary || null;
+      if (Array.isArray(commandData.strikeHighlight) && commandData.strikeHighlight.length) {
+        const cellsToMark = commandData.strikeHighlight
+          .map((coords) => coords ? getCell(coords.q, coords.r) : null)
+          .filter(Boolean);
+        if (cellsToMark.length) {
+          markStrikeArea(cellsToMark);
+        }
+      }
+      setPracticeMode(commandState.practiceMode);
+      renderWeaponBar();
+      updatePlanNextAttackUI();
+      updateAttackReportButton(awaitingNextPlan && Boolean(lastAttackSummary));
+    }
+
+    function loadProgress() {
+      if (typeof localStorage === 'undefined') return;
+      try {
+        const stored = localStorage.getItem(LOCAL_STORAGE_KEY);
+        if (!stored) return;
+        const payload = JSON.parse(stored);
+        if (payload.command && payload.command.settings) {
+          applyGameSettings(payload.command.settings, { rebuildGrid: true });
+        }
+        if (payload.map) {
+          restoreMapState(payload.map);
+        }
+        if (payload.command) {
+          restoreCommandState(payload.command);
+        }
+        updateAttackReportButton();
+      } catch (error) {
+        console.warn('Unable to load saved progress', error);
+      }
+    }
+
+    function createNewSpawnPoint() {
+      if (state.spawnPoints.length >= CAP_SPAWN_POINTS) return;
+      const candidates = availableNonEdgeCells();
+      if (!candidates.length) return;
+      const cell = selectRandomCell(candidates);
+      if (!cell) return;
+      placeSpawn(cell);
+      const spawn = state.spawnPoints[0];
+      spawnEnemiesAround(spawn, gameSettings.initialEnemyConfig);
+    }
+
+    function advanceTurn() {
+      state.turn += 1;
+
+      const spreadInterval = Math.max(1, gameSettings.spreadInterval);
+      if (state.turn % spreadInterval === 0) {
+        attemptEnemySpread();
+        spawnEnemyWave();
+      }
+
+      const spawnInterval = Math.max(1, gameSettings.spawnInterval);
+      if (state.turn % spawnInterval === 0) {
+        const beforeCount = state.spawnPoints.length;
+        createNewSpawnPoint();
+        if (state.spawnPoints.length === beforeCount) {
+          // no placement occurred, nothing else to do
+        }
+      }
+
+      refreshCounts();
+      commandState.weaponCooldowns.forEach((value, key) => {
+        if (value > 0) {
+          commandState.weaponCooldowns.set(key, Math.max(0, value - 1));
+        }
+      });
+      renderWeaponBar();
+      updatePracticeToggleVisibility();
+      updateModeIndicator();
+    }
+
+    function initialize() {
+      buildGrid();
+      resetState();
+      initializeObjects();
+      refreshCounts();
+    }
+
+    document.getElementById('nextTurnBtn').addEventListener('click', () => {
+      advanceTurn();
+      saveProgress();
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', () => {
+      resetState();
+      initializeObjects();
+      refreshCounts();
+      resetTargetingState();
+      commandState.weaponCooldowns = new Map();
+      WEAPON_CONFIGS.forEach((weapon) => commandState.weaponCooldowns.set(weapon.key, 0));
+      commandState.selectedWeapon = null;
+      renderWeaponBar();
+      updatePracticeToggleVisibility();
+      updateModeIndicator();
+      lastAttackSummary = null;
+      updateAttackReportButton();
+      if (typeof localStorage !== 'undefined') {
+        localStorage.removeItem(LOCAL_STORAGE_KEY);
+      }
+    });
+
+    practiceToggle.addEventListener('click', () => {
+      if (!commandState.vocabulary.length) return;
+      if (targetingState.active || targetingState.awaitingVocabulary || awaitingNextPlan) return;
+      togglePracticeMode();
+    });
+
+    if (topbarToggle) {
+      topbarToggle.addEventListener('click', () => {
+        if (!controlBar) return;
+        const collapsed = controlBar.classList.toggle('collapsed');
+        topbarToggle.textContent = collapsed ? 'Show Controls' : 'Hide';
+        topbarToggle.setAttribute('aria-expanded', collapsed ? 'false' : 'true');
+      });
+    }
+
+    if (attackReportBtn) {
+      attackReportBtn.addEventListener('click', () => {
+        if (!lastAttackSummary) return;
+        attackReportBtn.classList.remove('unread');
+        openAttackSummaryModal(lastAttackSummary);
+      });
+    }
+
+    if (planNextAttackBtn) {
+      planNextAttackBtn.addEventListener('click', () => {
+        handlePlanNextAttack();
+      });
+    }
+
+    if (playBackupBtn) {
+      playBackupBtn.addEventListener('click', () => {
+        const selection = sampleBackupWords(DEFAULT_VOCAB_REQUIRED);
+        startCommandSession(selection);
+      });
+    }
+
+    if (newGameBtn) {
+      newGameBtn.addEventListener('click', () => {
+        restartCurrentMission();
+      });
+    }
+
+    if (customGameBtn) {
+      customGameBtn.addEventListener('click', () => {
+        openCustomGameModal();
+      });
+    }
+
+    if (fullResetBtn) {
+      fullResetBtn.addEventListener('click', () => {
+        performCompleteReset();
+      });
+    }
+
+    if (vocabUpload) {
+      vocabUpload.addEventListener('change', (event) => {
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const data = JSON.parse(reader.result);
+            const entries = Array.isArray(data) ? data : Array.isArray(data?.vocabulary) ? data.vocabulary : [];
+            if (!entries.length) {
+              showMessageModal('Invalid File', 'The uploaded file did not contain a vocabulary list.');
+              return;
+            }
+            const prepared = prepareVocabularyList(entries);
+            openModal((container, close) => {
+              const heading = document.createElement('h2');
+              heading.textContent = `Loaded ${prepared.length} vocabulary words`;
+              const preview = document.createElement('div');
+              preview.className = 'vocab-preview';
+              prepared.forEach((item) => {
+                const itemEl = document.createElement('div');
+                itemEl.className = 'vocab-preview-item';
+                const wordEl = document.createElement('strong');
+                wordEl.textContent = item.word;
+                const defEl = document.createElement('p');
+                defEl.textContent = item.definition;
+                const examplesEl = document.createElement('ul');
+                item.examples.slice(0, 3).forEach((ex) => {
+                  const li = document.createElement('li');
+                  li.textContent = ex;
+                  examplesEl.appendChild(li);
+                });
+                itemEl.appendChild(wordEl);
+                itemEl.appendChild(defEl);
+                itemEl.appendChild(examplesEl);
+                preview.appendChild(itemEl);
+              });
+              const actions = document.createElement('div');
+              actions.className = 'modal-actions';
+              const startBtn = document.createElement('button');
+              startBtn.type = 'button';
+              startBtn.textContent = 'Start Mission';
+              startBtn.classList.add('primary');
+              startBtn.addEventListener('click', () => {
+                startCommandSession(prepared);
+                close();
+              });
+              const cancelBtn = document.createElement('button');
+              cancelBtn.type = 'button';
+              cancelBtn.textContent = 'Cancel';
+              cancelBtn.addEventListener('click', () => close());
+              actions.appendChild(cancelBtn);
+              actions.appendChild(startBtn);
+              container.appendChild(heading);
+              container.appendChild(preview);
+              container.appendChild(actions);
+            });
+          } catch (error) {
+            showMessageModal('Invalid File', 'Unable to parse the provided JSON file.');
+          }
+        };
+        reader.readAsText(file);
+        event.target.value = '';
+      });
+    }
+
+    confirmTargetBtn.addEventListener('click', () => {
+      confirmTargetSelection();
+    });
+
+    reselectTargetBtn.addEventListener('click', () => {
+      reselectTargetArea();
+    });
+
+    cancelTargetBtn.addEventListener('click', () => {
+      cancelTargeting();
+    });
+
+    renderWeaponBar();
+    initialize();
+    loadProgress();
+    updatePracticeToggleVisibility();
+    updateModeIndicator();
+    updateAttackReportButton();
   </script>
 </body>
 </html>
-<!-- ...existing code... -->
