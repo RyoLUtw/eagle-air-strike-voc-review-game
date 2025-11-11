@@ -2607,6 +2607,55 @@
       });
     }
 
+    function hasSelectableVocabulary(entries) {
+      return entries.some((info) => !info.isCompleted && !info.isLocked);
+    }
+
+    function unlockLowestLockedVocabulary(entries) {
+      const lockedEntries = entries.filter((info) => info.isLocked);
+      if (!lockedEntries.length) {
+        return false;
+      }
+      const minRemaining = Math.min(...lockedEntries.map((info) => info.roundsRemaining));
+      let changed = false;
+      lockedEntries.forEach((info) => {
+        if (info.roundsRemaining !== minRemaining) return;
+        const previous = info.progress || {};
+        commandState.progress.set(info.entry.id, {
+          ...previous,
+          lockedUntilTurn: null
+        });
+        changed = true;
+      });
+      if (changed) {
+        saveProgress();
+      }
+      return changed;
+    }
+
+    function resetCompletedVocabulary(entries) {
+      if (!entries.length) return false;
+      const allCompleted = entries.every((info) => info.isCompleted);
+      if (!allCompleted) {
+        return false;
+      }
+      let changed = false;
+      commandState.vocabulary.forEach((entry) => {
+        const progress = commandState.progress.get(entry.id);
+        if (!progress || !progress.completed) return;
+        commandState.progress.set(entry.id, {
+          ...progress,
+          completed: false,
+          lockedUntilTurn: null
+        });
+        changed = true;
+      });
+      if (changed) {
+        saveProgress();
+      }
+      return changed;
+    }
+
     function refreshVocabularyRosterIfComplete() {
       if (!commandState.vocabulary.length) return;
       let completedCount = 0;
@@ -3023,7 +3072,22 @@
     function openVocabularySelectionModal() {
       const weapon = WEAPON_CONFIGS.find((w) => w.key === targetingState.weaponKey);
       if (!weapon) return;
-      const entries = getVocabularyDisplayEntries();
+      let entries = getVocabularyDisplayEntries();
+      if (entries.length && !hasSelectableVocabulary(entries)) {
+        let updated = false;
+        if (unlockLowestLockedVocabulary(entries)) {
+          entries = getVocabularyDisplayEntries();
+          updated = true;
+        }
+        if (!hasSelectableVocabulary(entries) && resetCompletedVocabulary(entries)) {
+          entries = getVocabularyDisplayEntries();
+          updated = true;
+        }
+        if (updated) {
+          updatePracticeToggleVisibility();
+          updateModeIndicator();
+        }
+      }
       targetingState.awaitingVocabulary = true;
       renderWeaponBar();
 
