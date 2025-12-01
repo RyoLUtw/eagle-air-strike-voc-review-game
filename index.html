@@ -74,6 +74,14 @@
 
     let vocabulary = [];
 
+    const persistVocabulary = (entries) => {
+      try {
+        localStorage.setItem('uploadedVocabulary', JSON.stringify(entries));
+      } catch (err) {
+        console.warn('Could not persist vocabulary to localStorage', err);
+      }
+    };
+
     const updateStatus = (message, isError = false) => {
       loadStatus.textContent = message;
       loadStatus.style.color = isError ? '#ffb5b5' : '#9fb3d1';
@@ -84,8 +92,16 @@
         updateStatus(`Failed to load: expected an array from ${source}.`, true);
         return;
       }
+
       vocabulary = data;
       updateStatus(`Loaded ${data.length} entries from ${source}.`);
+      persistVocabulary(vocabulary);
+
+      const event = new CustomEvent('vocabularyLoaded', {
+        detail: { entries: vocabulary, source }
+      });
+      document.dispatchEvent(event);
+
       console.log('Vocabulary loaded:', vocabulary);
     };
 
