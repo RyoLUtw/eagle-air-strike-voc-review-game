@@ -580,6 +580,32 @@
       border-color: rgba(70,192,255,0.45);
     }
 
+    .vocab-paste-area {
+      width: 100%;
+      min-height: 220px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 12px;
+      padding: 1rem;
+      color: var(--text-light);
+      font-family: "SFMono-Regular", Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 0.95rem;
+      resize: vertical;
+    }
+
+    .vocab-paste-helper {
+      opacity: 0.75;
+      font-size: 0.9rem;
+      margin: 0;
+    }
+
+    .vocab-paste-error {
+      color: #ff9f43;
+      margin: 0;
+      font-size: 0.9rem;
+      min-height: 1.2rem;
+    }
+
     .attack-summary {
       display: grid;
       gap: 0.6rem;
@@ -855,6 +881,7 @@
         <div class="topbar-actions">
           <input id="vocabUpload" class="file-input" type="file" accept="application/json" />
           <label for="vocabUpload">Upload Vocabulary JSON</label>
+          <button type="button" id="pasteVocabBtn">Paste Vocabulary JSON</button>
           <button type="button" id="playBackupBtn">Play with Backup Words</button>
           <button type="button" id="newGameBtn">Restart Current Mission</button>
           <button type="button" id="customGameBtn">Create Custom Mission</button>
@@ -1408,6 +1435,7 @@
     const controlBar = document.getElementById('controlBar');
     const topbarToggle = document.getElementById('topbarToggle');
     const vocabUpload = document.getElementById('vocabUpload');
+    const pasteVocabBtn = document.getElementById('pasteVocabBtn');
     const playBackupBtn = document.getElementById('playBackupBtn');
     const newGameBtn = document.getElementById('newGameBtn');
     const customGameBtn = document.getElementById('customGameBtn');
@@ -2473,6 +2501,109 @@
       }
 
       return sanitized;
+    }
+
+    function extractVocabularyEntries(payload) {
+      if (Array.isArray(payload)) return payload;
+      if (payload && Array.isArray(payload.vocabulary)) return payload.vocabulary;
+      return [];
+    }
+
+    function showVocabularyPreview(prepared) {
+      openModal((container, close) => {
+        const heading = document.createElement('h2');
+        heading.textContent = `Loaded ${prepared.length} vocabulary words`;
+        const preview = document.createElement('div');
+        preview.className = 'vocab-preview';
+        prepared.forEach((item) => {
+          const itemEl = document.createElement('div');
+          itemEl.className = 'vocab-preview-item';
+          const wordEl = document.createElement('strong');
+          wordEl.textContent = item.word;
+          const defEl = document.createElement('p');
+          defEl.textContent = item.definition;
+          const examplesEl = document.createElement('ul');
+          item.examples.slice(0, 3).forEach((ex) => {
+            const li = document.createElement('li');
+            li.textContent = ex;
+            examplesEl.appendChild(li);
+          });
+          itemEl.appendChild(wordEl);
+          itemEl.appendChild(defEl);
+          itemEl.appendChild(examplesEl);
+          preview.appendChild(itemEl);
+        });
+        const actions = document.createElement('div');
+        actions.className = 'modal-actions';
+        const startBtn = document.createElement('button');
+        startBtn.type = 'button';
+        startBtn.textContent = 'Start Mission';
+        startBtn.classList.add('primary');
+        startBtn.addEventListener('click', () => {
+          startCommandSession(prepared);
+          close();
+        });
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.addEventListener('click', () => close());
+        actions.appendChild(cancelBtn);
+        actions.appendChild(startBtn);
+        container.appendChild(heading);
+        container.appendChild(preview);
+        container.appendChild(actions);
+      });
+    }
+
+    function openPasteVocabularyModal() {
+      openModal((container, close) => {
+        const heading = document.createElement('h2');
+        heading.textContent = 'Paste Vocabulary JSON';
+        const helper = document.createElement('p');
+        helper.className = 'vocab-paste-helper';
+        helper.textContent = 'Paste a JSON array of words or an object with a "vocabulary" array.';
+        const textarea = document.createElement('textarea');
+        textarea.className = 'vocab-paste-area';
+        textarea.placeholder = '[{"word":"courage","definition":"bravery","examples":["..." ]}]';
+        const errorEl = document.createElement('p');
+        errorEl.className = 'vocab-paste-error';
+
+        const actions = document.createElement('div');
+        actions.className = 'modal-actions';
+        const cancelBtn = document.createElement('button');
+        cancelBtn.type = 'button';
+        cancelBtn.textContent = 'Cancel';
+        cancelBtn.addEventListener('click', () => close());
+        const importBtn = document.createElement('button');
+        importBtn.type = 'button';
+        importBtn.textContent = 'Parse & Preview';
+        importBtn.classList.add('primary');
+
+        importBtn.addEventListener('click', () => {
+          errorEl.textContent = '';
+          try {
+            const payload = JSON.parse(textarea.value || '');
+            const entries = extractVocabularyEntries(payload);
+            if (!entries.length) {
+              errorEl.textContent = 'No vocabulary entries found. Provide an array or a "vocabulary" field.';
+              return;
+            }
+            const prepared = prepareVocabularyList(entries);
+            close();
+            showVocabularyPreview(prepared);
+          } catch (error) {
+            errorEl.textContent = 'Unable to parse the provided text as JSON. Please check the format.';
+          }
+        });
+
+        actions.appendChild(cancelBtn);
+        actions.appendChild(importBtn);
+        container.appendChild(heading);
+        container.appendChild(helper);
+        container.appendChild(textarea);
+        container.appendChild(errorEl);
+        container.appendChild(actions);
+      });
     }
 
     function updatePracticeToggle() {
@@ -4092,61 +4223,25 @@
         reader.onload = () => {
           try {
             const data = JSON.parse(reader.result);
-            const entries = Array.isArray(data) ? data : Array.isArray(data?.vocabulary) ? data.vocabulary : [];
+            const entries = extractVocabularyEntries(data);
             if (!entries.length) {
               showMessageModal('Invalid File', 'The uploaded file did not contain a vocabulary list.');
               return;
             }
             const prepared = prepareVocabularyList(entries);
-            openModal((container, close) => {
-              const heading = document.createElement('h2');
-              heading.textContent = `Loaded ${prepared.length} vocabulary words`;
-              const preview = document.createElement('div');
-              preview.className = 'vocab-preview';
-              prepared.forEach((item) => {
-                const itemEl = document.createElement('div');
-                itemEl.className = 'vocab-preview-item';
-                const wordEl = document.createElement('strong');
-                wordEl.textContent = item.word;
-                const defEl = document.createElement('p');
-                defEl.textContent = item.definition;
-                const examplesEl = document.createElement('ul');
-                item.examples.slice(0, 3).forEach((ex) => {
-                  const li = document.createElement('li');
-                  li.textContent = ex;
-                  examplesEl.appendChild(li);
-                });
-                itemEl.appendChild(wordEl);
-                itemEl.appendChild(defEl);
-                itemEl.appendChild(examplesEl);
-                preview.appendChild(itemEl);
-              });
-              const actions = document.createElement('div');
-              actions.className = 'modal-actions';
-              const startBtn = document.createElement('button');
-              startBtn.type = 'button';
-              startBtn.textContent = 'Start Mission';
-              startBtn.classList.add('primary');
-              startBtn.addEventListener('click', () => {
-                startCommandSession(prepared);
-                close();
-              });
-              const cancelBtn = document.createElement('button');
-              cancelBtn.type = 'button';
-              cancelBtn.textContent = 'Cancel';
-              cancelBtn.addEventListener('click', () => close());
-              actions.appendChild(cancelBtn);
-              actions.appendChild(startBtn);
-              container.appendChild(heading);
-              container.appendChild(preview);
-              container.appendChild(actions);
-            });
+            showVocabularyPreview(prepared);
           } catch (error) {
             showMessageModal('Invalid File', 'Unable to parse the provided JSON file.');
           }
         };
         reader.readAsText(file);
         event.target.value = '';
+      });
+    }
+
+    if (pasteVocabBtn) {
+      pasteVocabBtn.addEventListener('click', () => {
+        openPasteVocabularyModal();
       });
     }
 
