@@ -13,19 +13,138 @@
       --fill-2: #a8e6a1;
     }
     html,body{height:100%;margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto;}
-    .wrap{height:100%;display:flex;align-items:center;justify-content:center;background:#111;}
+    body{background:#0b0f16;color:#e4e7ec;}
+    .top-bar{position:fixed;top:0;left:0;right:0;display:flex;align-items:center;gap:12px;padding:12px 16px;background:#101728;border-bottom:1px solid #1f2638;z-index:10;box-shadow:0 4px 14px rgba(0,0,0,0.45)}
+    .bar-title{font-weight:700;letter-spacing:0.5px;color:#a0b8ff;}
+    .upload-label{display:inline-flex;align-items:center;gap:8px;padding:8px 14px;background:#1c2a48;color:#e4e7ec;border:1px solid #26385a;border-radius:8px;cursor:pointer;transition:transform 0.1s ease, box-shadow 0.1s ease;}
+    .upload-label:hover{transform:translateY(-1px);box-shadow:0 6px 12px rgba(0,0,0,0.35)}
+    .upload-input{display:none;}
+    .btn{padding:8px 14px;border-radius:8px;border:1px solid #26385a;background:#16213a;color:#e4e7ec;cursor:pointer;transition:transform 0.1s ease, box-shadow 0.1s ease;}
+    .btn.secondary{background:#23314f;}
+    .btn:hover{transform:translateY(-1px);box-shadow:0 6px 12px rgba(0,0,0,0.35)}
+    .status{margin-left:auto;font-size:13px;color:#9fb3d1;}
+    .wrap{height:100%;display:flex;align-items:center;justify-content:center;background:#111;padding-top:72px;box-sizing:border-box;}
     svg{background:linear-gradient(180deg,#0e1220,#0b0f16);border-radius:8px;box-shadow:0 6px 20px rgba(0,0,0,.6)}
     polygon.hex{stroke:var(--stroke);stroke-width:1.5px;fill:var(--fill);opacity:0.95}
     polygon.hex.alt{fill:var(--fill-2)}
     text.coord{pointer-events:none;fill:#062;fill-opacity:0.95;font-size:11px;font-weight:600;text-anchor:middle;dominant-baseline:central}
+    .modal-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.55);display:flex;align-items:center;justify-content:center;z-index:50;backdrop-filter:blur(3px);}
+    .modal{background:#0f1628;border:1px solid #1f2d4a;border-radius:12px;padding:20px;max-width:520px;width:90%;box-shadow:0 12px 30px rgba(0,0,0,0.5);}
+    .modal h2{margin:0 0 12px;font-size:18px;color:#a0b8ff;}
+    .modal textarea{width:100%;min-height:180px;background:#0a1020;color:#e4e7ec;border:1px solid #1f2d4a;border-radius:8px;padding:10px;font-family:ui-monospace, SFMono-Regular, SFMono, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;box-sizing:border-box;}
+    .modal-actions{margin-top:12px;display:flex;justify-content:flex-end;gap:10px;}
+    .hidden{display:none;}
   </style>
 </head>
 <body>
+  <div class="top-bar">
+    <span class="bar-title">Vocabulary Loader</span>
+    <label class="upload-label" for="upload-json">Upload VOC JSON
+      <input class="upload-input" type="file" id="upload-json" accept="application/json" />
+    </label>
+    <button class="btn secondary" id="open-paste-modal">Paste JSON</button>
+    <div class="status" id="load-status">No vocabulary loaded.</div>
+  </div>
+
   <div class="wrap">
     <svg id="grid"></svg>
   </div>
 
+  <div class="modal-backdrop hidden" id="paste-modal">
+    <div class="modal">
+      <h2>Paste vocabulary JSON</h2>
+      <p style="margin:0 0 8px;color:#9fb3d1;font-size:14px;">Paste plain text JSON containing your vocabulary list.</p>
+      <textarea id="paste-input" placeholder='e.g. [{"word":"alpha","definition":"first"}]'></textarea>
+      <div class="modal-actions">
+        <button class="btn" id="cancel-paste">Cancel</button>
+        <button class="btn secondary" id="confirm-paste">Confirm &amp; Parse</button>
+      </div>
+    </div>
+  </div>
+
   <script>
+    // vocab handling
+    const loadStatus = document.getElementById('load-status');
+    const uploadInput = document.getElementById('upload-json');
+    const pasteModal = document.getElementById('paste-modal');
+    const openPasteModal = document.getElementById('open-paste-modal');
+    const confirmPaste = document.getElementById('confirm-paste');
+    const cancelPaste = document.getElementById('cancel-paste');
+    const pasteInput = document.getElementById('paste-input');
+
+    let vocabulary = [];
+
+    const persistVocabulary = (entries) => {
+      try {
+        localStorage.setItem('uploadedVocabulary', JSON.stringify(entries));
+      } catch (err) {
+        console.warn('Could not persist vocabulary to localStorage', err);
+      }
+    };
+
+    const updateStatus = (message, isError = false) => {
+      loadStatus.textContent = message;
+      loadStatus.style.color = isError ? '#ffb5b5' : '#9fb3d1';
+    };
+
+    const handleVocabularyData = (data, source) => {
+      if(!Array.isArray(data)){
+        updateStatus(`Failed to load: expected an array from ${source}.`, true);
+        return;
+      }
+
+      vocabulary = data;
+      updateStatus(`Loaded ${data.length} entries from ${source}.`);
+      persistVocabulary(vocabulary);
+
+      const event = new CustomEvent('vocabularyLoaded', {
+        detail: { entries: vocabulary, source }
+      });
+      document.dispatchEvent(event);
+
+      console.log('Vocabulary loaded:', vocabulary);
+    };
+
+    uploadInput.addEventListener('change', (event) => {
+      const file = event.target.files?.[0];
+      if(!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target?.result || '[]');
+          handleVocabularyData(parsed, 'file upload');
+        } catch (err) {
+          console.error(err);
+          updateStatus('Could not parse uploaded JSON.', true);
+        }
+      };
+      reader.readAsText(file);
+    });
+
+    const showPasteModal = () => {
+      pasteInput.value = '';
+      pasteModal.classList.remove('hidden');
+      pasteInput.focus();
+    };
+
+    const hidePasteModal = () => {
+      pasteModal.classList.add('hidden');
+    };
+
+    openPasteModal.addEventListener('click', showPasteModal);
+    cancelPaste.addEventListener('click', hidePasteModal);
+
+    confirmPaste.addEventListener('click', () => {
+      try {
+        const parsed = JSON.parse(pasteInput.value || '[]');
+        handleVocabularyData(parsed, 'pasted JSON');
+        hidePasteModal();
+      } catch (err) {
+        console.error(err);
+        updateStatus('Could not parse pasted JSON.', true);
+      }
+    });
+
     // create a pointy-top hexagon grid (axial coordinates)
     // "side length 5" => radius = 4 (distance from center to any side)
     (function(){
